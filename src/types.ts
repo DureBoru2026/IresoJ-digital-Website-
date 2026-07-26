@@ -107,5 +107,30 @@ export interface Broadcast {
   recipientCount: number;
 }
 
-export type ActiveTab = 'home' | 'about' | 'services' | 'news' | 'contact' | 'login' | 'admin' | 'digital-store';
-export type AdminSubTab = 'dashboard' | 'products' | 'payments' | 'bookings' | 'history' | 'users' | 'share' | 'reports' | 'assets' | 'logs';
+export interface SmsBroadcast {
+  id: string;
+  senderId: string;
+  message: string;
+  timestamp: string;
+  recipientCount: number;
+  recipientsList?: string[];
+}
+
+export interface PayrollRecord {
+  id: string;
+  staffName: string;
+  role: string;
+  phone?: string;
+  baseSalary: number; // in ETB
+  bonus: number; // in ETB
+  taxDeduction: number; // in ETB
+  netPay: number; // in ETB (baseSalary + bonus - taxDeduction)
+  month: string; // e.g. "July 2026"
+  paymentStatus: 'paid' | 'pending' | 'processing';
+  paymentDate: string;
+  paymentMethod: 'telebirr' | 'CBE Birr' | 'Bank Transfer' | 'Cash';
+  notes?: string;
+}
+
+export type ActiveTab = 'home' | 'about' | 'services' | 'news' | 'contact' | 'login' | 'admin' | 'digital-store' | 'agriculture' | 'academy' | 'marketplace' | 'wishlist' | 'community' | 'durepay';
+export type AdminSubTab = 'dashboard' | 'products' | 'payments' | 'bookings' | 'history' | 'users' | 'share' | 'reports' | 'assets' | 'logs' | 'commission' | 'payroll';

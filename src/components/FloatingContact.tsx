@@ -7,6 +7,13 @@ export default function FloatingContact() {
 
   const contactOptions = [
     { 
+      name: 'Contact via WhatsApp', 
+      icon: <MessageCircle className="w-5 h-5" />, 
+      href: 'https://wa.me/251995852194?text=Hello%20ES%20Digital%20Service%20Center!%20I%20would%20like%20to%20inquire%20about%20your%20computer%20repair%20and%20digital%20printing%20services%20in%20Kore%20Town.', 
+      color: 'bg-emerald-600',
+      desc: 'Instant WhatsApp Inquiry'
+    },
+    { 
       name: 'Telegram Support', 
       icon: <Send className="w-5 h-5" />, 
       href: 'https://t.me/jemalfano', 
@@ -23,9 +30,9 @@ export default function FloatingContact() {
     { 
       name: 'Phone Call', 
       icon: <Phone className="w-5 h-5" />, 
-      href: 'tel:+251912345678', 
-      color: 'bg-emerald-500',
-      desc: 'Urgent Inquiries'
+      href: 'tel:+251995852194', 
+      color: 'bg-indigo-600',
+      desc: '+251 995 852 194'
     }
   ];
 

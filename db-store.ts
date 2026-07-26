@@ -10,6 +10,7 @@ export interface Booking { id: string; customerName: string; customerPhone: stri
 export interface DigitalAsset { id: string; title: string; type: 'video' | 'image' | 'template' | 'pdf' | 'ppt' | 'word'; priceType: 'free' | 'sale'; price: number; fileUrl: string; description: string; date: string; downloadCount: number; }
 export interface SecurityLog { id: string; adminUser: string; action: string; details: string; timestamp: string; severity: 'info' | 'warning' | 'critical'; ip?: string; }
 export interface Broadcast { id: string; subject: string; message: string; timestamp: string; recipientCount: number; }
+export interface SmsBroadcast { id: string; senderId: string; message: string; timestamp: string; recipientCount: number; recipientsList?: string[]; }
 
 async function getCollection<T>(name: string): Promise<T[]> {
   const col = collection(firestore, name);
@@ -46,4 +47,6 @@ export const db = {
   saveLogs: (logs: SecurityLog[]) => saveCollection<SecurityLog>('security_logs', logs),
   getBroadcasts: () => getCollection<Broadcast>('broadcasts'),
   saveBroadcasts: (broadcasts: Broadcast[]) => saveCollection<Broadcast>('broadcasts', broadcasts),
+  getSmsBroadcasts: () => getCollection<SmsBroadcast>('sms_broadcasts'),
+  saveSmsBroadcasts: (smsBroadcasts: SmsBroadcast[]) => saveCollection<SmsBroadcast>('sms_broadcasts', smsBroadcasts),
 };

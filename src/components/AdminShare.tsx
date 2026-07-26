@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-import { Mail, MessageCircle, Calendar, Send, Trash2, ShieldCheck, Check, AlertCircle, RefreshCw, Archive, Star, Eye, EyeOff } from 'lucide-react';
-import { Announcement, Feedback } from '../types';
+import React, { useState, useMemo } from 'react';
+import { Mail, MessageCircle, Calendar, Send, Trash2, ShieldCheck, Check, AlertCircle, RefreshCw, Archive, Star, Eye, EyeOff, Smartphone, PhoneCall, Sparkles, Users, X, AlertTriangle } from 'lucide-react';
+import { Announcement, Feedback, CustomerRecord, Transaction, Booking, SmsBroadcast } from '../types';
 
 interface AdminShareProps {
   announcements: Announcement[];
   feedback: Feedback[];
+  customers?: CustomerRecord[];
+  transactions?: Transaction[];
+  bookings?: Booking[];
   onAddAnnouncement: (announcement: { title: string; content: string; author: string }) => Promise<boolean>;
   onDeleteAnnouncement: (id: string) => Promise<boolean>;
   onUpdateFeedbackStatus: (id: string, status: 'read' | 'replied', replyMessage?: string) => Promise<boolean>;
@@ -12,20 +15,75 @@ interface AdminShareProps {
   onDeleteFeedback: (id: string) => Promise<boolean>;
   onSendBroadcast: (subject: string, message: string) => Promise<{ success: boolean; count: number }>;
   onGetBroadcasts: () => Promise<any[]>;
+  onSendSmsBroadcast?: (senderId: string, message: string) => Promise<{ success: boolean; count: number; recipients?: string[] }>;
+  onGetSmsBroadcasts?: () => Promise<any[]>;
 }
 
 export default function AdminShare({
   announcements,
   feedback,
+  customers = [],
+  transactions = [],
+  bookings = [],
   onAddAnnouncement,
   onDeleteAnnouncement,
   onUpdateFeedbackStatus,
   onUpdateFeedbackPublic,
   onDeleteFeedback,
   onSendBroadcast,
-  onGetBroadcasts
+  onGetBroadcasts,
+  onSendSmsBroadcast,
+  onGetSmsBroadcasts
 }: AdminShareProps) {
   
+  // Extract unique customer phone numbers from CRM
+  const crmPhoneNumbers = useMemo(() => {
+    const phones = new Set<string>();
+
+    (transactions || []).forEach(t => {
+      if (t && t.customerPhone && t.customerPhone.trim()) {
+        phones.add(t.customerPhone.trim());
+      }
+    });
+
+    (bookings || []).forEach(b => {
+      if (b && b.customerPhone && b.customerPhone.trim()) {
+        phones.add(b.customerPhone.trim());
+      }
+    });
+
+    (feedback || []).forEach(f => {
+      if (f && f.phone && f.phone.trim()) {
+        phones.add(f.phone.trim());
+      }
+    });
+
+    (customers || []).forEach(c => {
+      if (c && c.contact && /^[+\d\s\-()]{7,}$/.test(c.contact.trim())) {
+        phones.add(c.contact.trim());
+      }
+    });
+
+    return Array.from(phones);
+  }, [transactions, bookings, feedback, customers]);
+
+  // Bulk SMS Promotional Broadcast States
+  const [smsSenderId, setSmsSenderId] = useState('ES_DIGITAL');
+  const [smsMessage, setSmsMessage] = useState('');
+  const [smsBroadcasts, setSmsBroadcasts] = useState<SmsBroadcast[]>([]);
+  const [smsStatus, setSmsStatus] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [smsLoading, setSmsLoading] = useState(false);
+  const [showRecipientList, setShowRecipientList] = useState(false);
+
+  // Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    type: 'sms' | 'email';
+    title: string;
+    recipientCount: number;
+    senderOrSubject: string;
+    messagePreview: string;
+  } | null>(null);
+
   // Newsletter Broadcast States
   const [broadcasts, setBroadcasts] = React.useState<any[]>([]);
   const [broadcastSubject, setBroadcastSubject] = useState('');
@@ -35,6 +93,7 @@ export default function AdminShare({
 
   React.useEffect(() => {
     loadBroadcastHistory();
+    loadSmsHistory();
   }, []);
 
   const loadBroadcastHistory = async () => {
@@ -46,12 +105,76 @@ export default function AdminShare({
     }
   };
 
-  const handleSendBroadcast = async (e: React.FormEvent) => {
+  const loadSmsHistory = async () => {
+    if (onGetSmsBroadcasts) {
+      try {
+        const data = await onGetSmsBroadcasts();
+        setSmsBroadcasts(data);
+      } catch (err) {
+        console.error('Failed to load SMS broadcast history');
+      }
+    }
+  };
+
+  const handleSmsSubmitAttempt = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!smsMessage.trim()) return;
+
+    if (crmPhoneNumbers.length === 0) {
+      setSmsStatus({ text: 'No customer phone numbers found in CRM to dispatch SMS.', type: 'error' });
+      return;
+    }
+
+    setConfirmModal({
+      type: 'sms',
+      title: 'Confirm Bulk SMS Broadcast',
+      recipientCount: crmPhoneNumbers.length,
+      senderOrSubject: smsSenderId || 'ES_DIGITAL',
+      messagePreview: smsMessage
+    });
+  };
+
+  const executeSmsSend = async () => {
+    setSmsLoading(true);
+    setSmsStatus(null);
+
+    try {
+      if (onSendSmsBroadcast) {
+        const result = await onSendSmsBroadcast(smsSenderId || 'ES_DIGITAL', smsMessage);
+        if (result.success) {
+          setSmsStatus({
+            text: `SMS Promotional Campaign Dispatched! Message sent to ${result.count} customer phone numbers.`,
+            type: 'success'
+          });
+          setSmsMessage('');
+          loadSmsHistory();
+        } else {
+          setSmsStatus({ text: 'SMS Broadcast failed. Please verify gateway settings.', type: 'error' });
+        }
+      } else {
+        setSmsStatus({ text: 'SMS service handler not initialized.', type: 'error' });
+      }
+    } catch (err) {
+      setSmsStatus({ text: 'SMS Broadcast failed due to a network error.', type: 'error' });
+    } finally {
+      setSmsLoading(false);
+    }
+  };
+
+  const handleEmailSubmitAttempt = (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastSubject.trim() || !broadcastMessage.trim()) return;
-    
-    if (!window.confirm('Send this newsletter to all registered customers? This action cannot be undone.')) return;
 
+    setConfirmModal({
+      type: 'email',
+      title: 'Confirm Newsletter Email Broadcast',
+      recipientCount: feedback.length + customers.length + transactions.length || 1,
+      senderOrSubject: broadcastSubject,
+      messagePreview: broadcastMessage
+    });
+  };
+
+  const executeEmailSend = async () => {
     setBroadcastLoading(true);
     setBroadcastStatus(null);
 
@@ -75,12 +198,39 @@ export default function AdminShare({
     }
   };
 
+  const handleConfirmAction = async () => {
+    if (!confirmModal) return;
+    const actionType = confirmModal.type;
+    setConfirmModal(null);
+
+    if (actionType === 'sms') {
+      await executeSmsSend();
+    } else {
+      await executeEmailSend();
+    }
+  };
+
   // Announcement States
   const [annTitle, setAnnTitle] = useState('');
   const [annContent, setAnnContent] = useState('');
   const [annAuthor, setAnnAuthor] = useState('Jemal Ireso (Manager)');
   const [annMessage, setAnnMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [annLoading, setAnnLoading] = useState(false);
+  const [lastPublishedShare, setLastPublishedShare] = useState<{ title: string; content: string } | null>(null);
+  const [copiedShareText, setCopiedShareText] = useState(false);
+
+  const getSocialShareLinks = (title: string, content: string) => {
+    const origin = window.location.origin || 'https://esdigital-computer.app';
+    const advertText = `📢 [ES Digital News & Announcement]\n\n*${title}*\n\n${content}\n\n📱 ES Digital Computer Services (Kore Town Center, West Arsi)\n• Laptop & Desktop Repair & Diagnostics\n• Document Printing & Graphical Layouts\n• Short IT & Computer Training Courses\n• Handcrafted Genuine Leather Goods\n\nVisit & track your service online: ${origin}`;
+    
+    return {
+      whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(advertText)}`,
+      telegram: `https://t.me/share/url?url=${encodeURIComponent(origin)}&text=${encodeURIComponent(`📢 ${title}\n\n${content}\n\nVisit app: ${origin}`)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(origin)}&quote=${encodeURIComponent(advertText)}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(`📢 ${title} - ES Digital Services\n${origin}`)}`,
+      rawText: advertText
+    };
+  };
 
   // Feedback States
   const [activeFeedbackId, setActiveFeedbackId] = useState<string | null>(null);
@@ -107,10 +257,10 @@ export default function AdminShare({
       });
 
       if (success) {
-        setAnnMessage({ text: 'Announcement published successfully!', type: 'success' });
+        setLastPublishedShare({ title: annTitle, content: annContent });
+        setAnnMessage({ text: 'Announcement published successfully! Use direct share buttons below to advertise on social media.', type: 'success' });
         setAnnTitle('');
         setAnnContent('');
-        setTimeout(() => setAnnMessage(null), 3000);
       } else {
         setAnnMessage({ text: 'Publishing failed.', type: 'error' });
       }
@@ -269,32 +419,141 @@ export default function AdminShare({
           </div>
         </form>
 
+        {/* Direct Social Media Sharing & Advertisement Banner for Recently Published Announcement */}
+        {lastPublishedShare && (
+          <div className="bg-gradient-to-br from-indigo-900 via-slate-900 to-sky-950 p-5 rounded-2xl border border-indigo-500/30 text-white space-y-3 shadow-xl animate-in fade-in slide-in-from-top-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-widest text-sky-300 bg-sky-500/20 px-2.5 py-0.5 rounded-full border border-sky-400/30 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-300" /> Direct Social Share & Business Advert
+              </span>
+              <button
+                type="button"
+                onClick={() => setLastPublishedShare(null)}
+                className="text-slate-400 hover:text-white text-xs font-bold"
+              >
+                Dismiss
+              </button>
+            </div>
+
+            <p className="text-xs font-bold text-slate-200 line-clamp-1">"{lastPublishedShare.title}"</p>
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              <a
+                href={getSocialShareLinks(lastPublishedShare.title, lastPublishedShare.content).telegram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-[#229ED9] hover:bg-[#1d88bb] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+              >
+                <span>Share on Telegram</span>
+              </a>
+              <a
+                href={getSocialShareLinks(lastPublishedShare.title, lastPublishedShare.content).whatsapp}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+              >
+                <span>Share on WhatsApp</span>
+              </a>
+              <a
+                href={getSocialShareLinks(lastPublishedShare.title, lastPublishedShare.content).facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-[#1877F2] hover:bg-[#1464cc] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+              >
+                <span>Facebook</span>
+              </a>
+              <a
+                href={getSocialShareLinks(lastPublishedShare.title, lastPublishedShare.content).twitter}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+              >
+                <span>X (Twitter)</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(getSocialShareLinks(lastPublishedShare.title, lastPublishedShare.content).rawText);
+                  setCopiedShareText(true);
+                  setTimeout(() => setCopiedShareText(false), 2000);
+                }}
+                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+              >
+                {copiedShareText ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                <span>{copiedShareText ? 'Copied Advert Text!' : 'Copy Promo Link'}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Existing Announcements List */}
         <div className="space-y-3.5">
           <h3 className="font-display font-bold text-sm text-slate-800">
             Active Broadcast History ({announcements.length})
           </h3>
-          <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
-            {announcements.filter(ann => ann && ann.title).map((ann) => (
-              <div key={ann.id} className="bg-white rounded-xl border border-slate-100 p-4 flex justify-between items-start space-x-3 hover:border-slate-200 transition-colors shadow-sm">
-                <div className="min-w-0">
-                  <h4 className="font-bold text-slate-900 text-xs truncate">{ann.title}</h4>
-                  <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">{ann.content}</p>
-                  <div className="flex items-center space-x-2 text-[10px] font-mono text-slate-400 mt-2">
-                    <span>By {ann.author}</span>
-                    <span>•</span>
-                    <span>{new Date(ann.date).toLocaleDateString()}</span>
+          <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+            {announcements.filter(ann => ann && ann.title).map((ann) => {
+              const shareLinks = getSocialShareLinks(ann.title, ann.content);
+              return (
+                <div key={ann.id} className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3 hover:border-slate-200 transition-colors shadow-sm">
+                  <div className="flex justify-between items-start space-x-3">
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-slate-900 text-xs truncate">{ann.title}</h4>
+                      <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">{ann.content}</p>
+                      <div className="flex items-center space-x-2 text-[10px] font-mono text-slate-400 mt-2">
+                        <span>By {ann.author}</span>
+                        <span>•</span>
+                        <span>{new Date(ann.date).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteAnn(ann.id)}
+                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg shrink-0 transition-colors"
+                      title="Remove Announcement"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Direct Quick Share Bar */}
+                  <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-[10px] font-bold">
+                    <span className="text-slate-400 uppercase tracking-wider text-[9px] mr-1">Direct Share & Advert:</span>
+                    <a
+                      href={shareLinks.telegram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-1 bg-sky-50 text-[#229ED9] hover:bg-sky-100 rounded-lg border border-sky-100 transition-colors"
+                    >
+                      Telegram
+                    </a>
+                    <a
+                      href={shareLinks.whatsapp}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-1 bg-emerald-50 text-[#25D366] hover:bg-emerald-100 rounded-lg border border-emerald-100 transition-colors"
+                    >
+                      WhatsApp
+                    </a>
+                    <a
+                      href={shareLinks.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-1 bg-blue-50 text-[#1877F2] hover:bg-blue-100 rounded-lg border border-blue-100 transition-colors"
+                    >
+                      Facebook
+                    </a>
+                    <a
+                      href={shareLinks.twitter}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-1 bg-slate-50 text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors"
+                    >
+                      X (Twitter)
+                    </a>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleDeleteAnn(ann.id)}
-                  className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg shrink-0 transition-colors"
-                  title="Remove Announcement"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -472,6 +731,202 @@ export default function AdminShare({
         </div>
       </div>
 
+      {/* Full Width: Bulk SMS Promotional Broadcast Tool */}
+      <div className="lg:col-span-2 space-y-6 pt-8 border-t border-slate-100">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-display font-bold text-slate-900 flex items-center gap-2">
+              <Smartphone className="w-5 h-5 text-emerald-600" />
+              <span>Bulk SMS Promotional Broadcast Tool</span>
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Send instant promotional updates, discount codes, and service reminders directly to customer mobile phones retrieved from CRM records.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-xs font-bold border border-emerald-200 flex items-center gap-1.5 shadow-sm">
+              <Users className="w-3.5 h-3.5 text-emerald-600" />
+              <span>CRM Phone Contacts: {crmPhoneNumbers.length}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowRecipientList(!showRecipientList)}
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full text-xs font-bold transition-colors cursor-pointer"
+            >
+              {showRecipientList ? 'Hide Contacts' : 'View Target Numbers'}
+            </button>
+          </div>
+        </div>
+
+        {/* Collapsible Recipient Numbers Preview */}
+        {showRecipientList && (
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 animate-in fade-in duration-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">Detected CRM Phone Numbers ({crmPhoneNumbers.length})</span>
+              <span className="text-[10px] text-slate-400 font-mono">Aggregated from bookings, sales & inquiries</span>
+            </div>
+            {crmPhoneNumbers.length === 0 ? (
+              <p className="text-xs text-slate-400 italic">No customer phone numbers found in CRM records yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pt-1">
+                {crmPhoneNumbers.map((phone, idx) => (
+                  <span key={idx} className="bg-white border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg text-[11px] font-mono flex items-center gap-1 shadow-2xs">
+                    <PhoneCall className="w-3 h-3 text-emerald-500" />
+                    <span>{phone}</span>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {smsStatus && (
+          <div className={`p-4 rounded-xl border flex items-center space-x-2 text-xs font-semibold animate-in fade-in slide-in-from-top-2 ${
+            smsStatus.type === 'success' 
+              ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+              : 'bg-red-50 text-red-800 border-red-200'
+          }`}>
+            {smsStatus.type === 'success' ? <Check className="w-4 h-4 text-emerald-600" /> : <AlertCircle className="w-4 h-4 text-red-600" />}
+            <span>{smsStatus.text}</span>
+          </div>
+        )}
+
+        <div className="bg-gradient-to-br from-emerald-950 via-slate-900 to-emerald-950 rounded-[2rem] p-8 text-white shadow-xl shadow-emerald-900/10 relative overflow-hidden border border-emerald-900/50">
+          <form onSubmit={handleSmsSubmitAttempt} className="relative z-10 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              
+              <div className="md:col-span-8 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Promotional Message Text</label>
+                  <span className={`text-[10px] font-mono font-bold ${smsMessage.length > 160 ? 'text-amber-400' : 'text-slate-400'}`}>
+                    {smsMessage.length} / 160 chars ({Math.ceil(smsMessage.length / 160) || 1} SMS segment{Math.ceil(smsMessage.length / 160) > 1 ? 's' : ''})
+                  </span>
+                </div>
+
+                <textarea
+                  required
+                  rows={5}
+                  placeholder="Write your promotional SMS message here... Keep it concise, engaging, and clear for mobile screens!"
+                  value={smsMessage}
+                  onChange={(e) => setSmsMessage(e.target.value)}
+                  className="w-full bg-slate-800/90 border border-slate-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-emerald-500 transition-all text-sm font-mono resize-none"
+                />
+
+                {/* Quick Promotional Templates */}
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-400" /> Quick SMS Promo Templates:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSmsMessage("ES Digital Special Promo: Get 20% discount on all laptop maintenance & printing services this week! Visit us at ES Digital Center or call 0911554433.")}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg text-[11px] font-semibold transition-colors border border-slate-700 cursor-pointer"
+                    >
+                      🎁 20% Off Maintenance
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSmsMessage("New Stock Arrival at ES Digital: High quality genuine leather wallets & tech accessories now in stock. Order online today!")}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg text-[11px] font-semibold transition-colors border border-slate-700 cursor-pointer"
+                    >
+                      💼 New Goods In Stock
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSmsMessage("Computer Training Open: Register for MS Office, Graphic Design & Web Development at ES Digital Computer Center. Limited seats!")}
+                      className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg text-[11px] font-semibold transition-colors border border-slate-700 cursor-pointer"
+                    >
+                      🎓 Training Enrollment
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="md:col-span-4 flex flex-col justify-between space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-emerald-400">SMS Sender ID Header</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="ES_DIGITAL"
+                    value={smsSenderId}
+                    onChange={(e) => setSmsSenderId(e.target.value)}
+                    className="w-full bg-slate-800 border border-slate-700 text-white px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-emerald-500 transition-all text-xs font-bold"
+                  />
+                  <p className="text-[10px] text-slate-400 italic">Displayed on target mobile handsets as SMS Sender</p>
+                </div>
+
+                <div className="bg-slate-800/60 border border-slate-700/80 rounded-2xl p-4 space-y-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                    <span>Target Audience:</span>
+                    <span className="text-emerald-400 font-mono">{crmPhoneNumbers.length} Mobile Numbers</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-300">
+                    <span>SMS Gateway:</span>
+                    <span className="text-sky-400 font-mono">Ethio Telecom SMS Portal</span>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={smsLoading || !smsMessage.trim() || crmPhoneNumbers.length === 0}
+                  className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/40 disabled:opacity-50 disabled:hover:bg-emerald-600 cursor-pointer"
+                >
+                  {smsLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Dispatching Bulk SMS...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Dispatch Bulk SMS ({crmPhoneNumbers.length} Numbers)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+            </div>
+          </form>
+        </div>
+
+        {/* SMS Broadcast Archives */}
+        <div className="space-y-3 pt-2">
+          <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">SMS Campaign Dispatch History</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {smsBroadcasts.length === 0 ? (
+              <div className="col-span-full py-6 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                <p className="text-xs text-slate-400 font-bold italic">No previous SMS broadcasts found.</p>
+              </div>
+            ) : (
+              smsBroadcasts.map((sb) => (
+                <div key={sb.id} className="bg-white border border-slate-100 rounded-2xl p-4 hover:shadow-md transition-all">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center font-bold">
+                        <Smartphone className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Sender: {sb.senderId}</p>
+                        <p className="text-[10px] text-slate-400 font-bold">{new Date(sb.timestamp).toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+                      {sb.recipientCount} Recipients
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-700 font-mono leading-relaxed bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                    "{sb.message}"
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+      </div>
+
       {/* Full Width: Newsletter Broadcast */}
       <div className="lg:col-span-2 space-y-6 pt-8 border-t border-slate-100">
         <div className="flex items-center justify-between">
@@ -503,7 +958,7 @@ export default function AdminShare({
         <div className="bg-slate-900 rounded-[2rem] p-8 text-white shadow-2xl shadow-indigo-100/20 relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500 rounded-full blur-[120px] opacity-10 -mr-48 -mt-48 transition-transform group-hover:scale-110 duration-700" />
           
-          <form onSubmit={handleSendBroadcast} className="relative z-10 space-y-6">
+          <form onSubmit={handleEmailSubmitAttempt} className="relative z-10 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
               <div className="md:col-span-8 space-y-4">
                 <div className="space-y-1.5">
@@ -603,6 +1058,100 @@ export default function AdminShare({
           )}
         </div>
       </div>
+
+      {/* Confirmation Modal Dialog for Bulk SMS and Email Broadcast Actions */}
+      {confirmModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 relative animate-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold shadow-md ${
+                  confirmModal.type === 'sms' ? 'bg-emerald-600 shadow-emerald-500/30' : 'bg-indigo-600 shadow-indigo-500/30'
+                }`}>
+                  {confirmModal.type === 'sms' ? <Smartphone className="w-6 h-6" /> : <Mail className="w-6 h-6" />}
+                </div>
+                <div>
+                  <h3 className="text-lg font-display font-bold text-slate-900 dark:text-white">
+                    {confirmModal.title}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {confirmModal.type === 'sms' ? 'Promotional SMS Campaign' : 'Newsletter Email Dispatch'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmModal(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Campaign Specifications */}
+            <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-4 border border-slate-100 dark:border-slate-800 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-500 dark:text-slate-400">
+                  {confirmModal.type === 'sms' ? 'Sender Header' : 'Email Subject'}:
+                </span>
+                <span className="font-bold text-slate-900 dark:text-white font-mono">
+                  {confirmModal.senderOrSubject}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-500 dark:text-slate-400">Target Recipients:</span>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                  confirmModal.type === 'sms' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300'
+                }`}>
+                  {confirmModal.recipientCount} Customer Contacts
+                </span>
+              </div>
+
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1">Message Preview</span>
+                <p className="text-xs font-mono text-slate-700 dark:text-slate-300 line-clamp-4 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 italic">
+                  "{confirmModal.messagePreview}"
+                </p>
+              </div>
+            </div>
+
+            {/* Warning Banner */}
+            <div className="p-3.5 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-900/50 rounded-xl flex items-start gap-2.5 text-xs text-amber-800 dark:text-amber-300">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <span>
+                <strong>Bulk Action Warning:</strong> This operation will send messages to <strong>{confirmModal.recipientCount} recipients</strong> immediately. Once dispatched, this action cannot be recalled.
+              </span>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal(null)}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmAction}
+                className={`px-5 py-2.5 rounded-xl text-white font-bold text-xs flex items-center gap-2 shadow-lg transition-all cursor-pointer ${
+                  confirmModal.type === 'sms'
+                    ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/30'
+                    : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/30'
+                }`}
+              >
+                <Send className="w-4 h-4" />
+                <span>Confirm & Send {confirmModal.type === 'sms' ? 'SMS Broadcast' : 'Newsletter Email'}</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

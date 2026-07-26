@@ -11,7 +11,12 @@ import {
   Package,
   ArrowRight,
   TrendingUp,
-  BarChart as BarChartIcon
+  BarChart as BarChartIcon,
+  PackagePlus,
+  Megaphone,
+  CalendarPlus,
+  Zap,
+  ShieldCheck
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -27,6 +32,8 @@ import {
 } from 'recharts';
 import { Booking, Transaction, Feedback } from '../types';
 import { formatETB } from '../utils';
+import RecentActivityFeed from './RecentActivityFeed';
+import AdminFailedLoginAlerts from './AdminFailedLoginAlerts';
 
 interface AdminDashboardProps {
   bookings: Booking[];
@@ -150,6 +157,86 @@ export default function AdminDashboard({ bookings, transactions, feedback, onSet
         </div>
       </div>
 
+      {/* Quick Actions Bar */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-5 sm:p-6 text-white shadow-lg space-y-4 border border-slate-800">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 bg-amber-400/10 text-amber-400 rounded-xl border border-amber-400/20">
+              <Zap className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-black font-display text-white flex items-center gap-2">
+                Quick Actions
+                <span className="text-[10px] font-mono font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 px-2 py-0.5 rounded-full uppercase">
+                  1-Click Workflow
+                </span>
+              </h3>
+              <p className="text-xs text-slate-400">Fast shortcuts for high-frequency store management tasks</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700/60 text-[11px] text-slate-300">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span className="font-bold">ES Digital Staff Authenticated</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <button
+            onClick={() => onSetTab('products')}
+            className="flex items-center gap-3.5 p-4 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-sky-500/50 rounded-2xl transition-all cursor-pointer group text-left shadow-xs"
+          >
+            <div className="p-3 bg-sky-500/10 text-sky-400 group-hover:bg-sky-500 group-hover:text-slate-950 rounded-xl transition-colors">
+              <PackagePlus className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-black text-white group-hover:text-sky-300 transition-colors block">
+                Add New Product
+              </span>
+              <span className="text-[11px] text-slate-400 font-medium">
+                Digital store & hardware inventory
+              </span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => onSetTab('share')}
+            className="flex items-center gap-3.5 p-4 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-amber-500/50 rounded-2xl transition-all cursor-pointer group text-left shadow-xs"
+          >
+            <div className="p-3 bg-amber-500/10 text-amber-400 group-hover:bg-amber-400 group-hover:text-slate-950 rounded-xl transition-colors">
+              <Megaphone className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-black text-white group-hover:text-amber-300 transition-colors block">
+                Create Announcement
+              </span>
+              <span className="text-[11px] text-slate-400 font-medium">
+                Broadcast message to customer inbox
+              </span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => onSetTab('bookings')}
+            className="flex items-center gap-3.5 p-4 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-emerald-500/50 rounded-2xl transition-all cursor-pointer group text-left shadow-xs"
+          >
+            <div className="p-3 bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-400 group-hover:text-slate-950 rounded-xl transition-colors">
+              <CalendarPlus className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-xs font-black text-white group-hover:text-emerald-300 transition-colors block">
+                Register Booking
+              </span>
+              <span className="text-[11px] text-slate-400 font-medium">
+                Log repair or IT service ticket
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Real-time Failed Login & Brute-Force Defense Monitor Widget */}
+      <AdminFailedLoginAlerts />
+
       {/* Primary KPI Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden group">
@@ -256,51 +343,14 @@ export default function AdminDashboard({ bookings, transactions, feedback, onSet
             </div>
           </div>
 
-          {/* Activity Feed */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="font-display font-bold text-slate-900">Live Activity Stream</h4>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-1 rounded-lg">Real-time Feed</span>
-            </div>
-            <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
-              <div className="divide-y divide-slate-50">
-                {recentActivity.filter(item => item && item.title).map((item) => (
-                  <div key={item.id} className="p-4 hover:bg-slate-50 transition-colors flex gap-4">
-                    <div className={`p-2.5 rounded-xl h-fit \u0024{
-                      item.type === 'transaction' ? 'bg-emerald-50 text-emerald-600' : 
-                      item.type === 'booking' ? 'bg-sky-50 text-sky-600' : 'bg-amber-50 text-amber-600'
-                    }`}>
-                      {item.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2 mb-0.5">
-                        <p className="text-sm font-bold text-slate-900 truncate">{item.title}</p>
-                        <span className="text-[10px] font-medium text-slate-400 whitespace-nowrap">
-                          {new Date(item.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500 line-clamp-1">{item.description}</p>
-                      <div className="mt-2">
-                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full \u0024{
-                          item.status === 'approved' || item.status === 'confirmed' || item.status === 'completed' || item.status === 'read'
-                            ? 'bg-emerald-100 text-emerald-700'
-                            : 'bg-amber-100 text-amber-700'
-                        }`}>
-                          {item.status}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {recentActivity.length === 0 && (
-                  <div className="p-12 text-center">
-                    <Package className="w-12 h-12 text-slate-200 mx-auto mb-4" />
-                    <p className="text-slate-400 font-medium">No activity today</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          {/* Recent Activity Feed */}
+          <RecentActivityFeed
+            bookings={bookings}
+            transactions={transactions}
+            feedback={feedback}
+            onSetTab={onSetTab}
+            maxItems={5}
+          />
         </div>
 
         {/* Sidebar: Daily Sales Summary & System Status */}
@@ -379,6 +429,19 @@ export default function AdminDashboard({ bookings, transactions, feedback, onSet
                   <span className="text-xs font-bold">Deep Analytics</span>
                 </div>
                 <ArrowRight className="w-3 h-3 text-slate-600 group-hover:text-white" />
+              </button>
+
+              <button 
+                onClick={() => onSetTab('commission')}
+                className="w-full flex items-center justify-between p-3 bg-amber-500/10 hover:bg-amber-500/20 rounded-2xl transition-colors group border border-amber-500/20"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-amber-500/20 text-amber-400 rounded-lg">
+                    <BarChartIcon className="w-3 h-3" />
+                  </div>
+                  <span className="text-xs font-bold text-amber-300">2% Commission Engine</span>
+                </div>
+                <ArrowRight className="w-3 h-3 text-amber-500 group-hover:text-amber-300" />
               </button>
             </div>
             

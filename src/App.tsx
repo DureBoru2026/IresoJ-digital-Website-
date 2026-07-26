@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Laptop, Phone, Mail, MapPin, ArrowRight, ShieldCheck, 
-  MessageSquare, BookOpen, AlertCircle, Sparkles, CheckCircle2,
+  MessageSquare, MessageCircle, BookOpen, AlertCircle, Sparkles, CheckCircle2,
   ListFilter, DollarSign, Calendar, Heart, Shield, HelpCircle, Eye, LogIn,
   Send, Search, ChevronDown, RotateCcw, X, ZoomIn, Download, Star
 } from 'lucide-react';
@@ -29,6 +29,8 @@ import AdminReport from './components/AdminReport';
 import AdminDashboard from './components/AdminDashboard';
 import AdminAssets from './components/AdminAssets';
 import AdminSecurityLogs from './components/AdminSecurityLogs';
+import AdminCommission from './components/AdminCommission';
+import AdminPayroll from './components/AdminPayroll';
 import ServiceTracker from './components/ServiceTracker';
 import FloatingContact from './components/FloatingContact';
 import UpdateNotifier from './components/UpdateNotifier';
@@ -37,6 +39,8 @@ import RecentlyViewed from './components/RecentlyViewed';
 import MobileAirtimePurchase from './components/MobileAirtimePurchase';
 import SuccessStoriesCarousel from './components/SuccessStoriesCarousel';
 import FAQ from './components/FAQ';
+import HomeDashboardShowcase from './components/HomeDashboardShowcase';
+import ServiceCostEstimator from './components/ServiceCostEstimator';
 
 const sampleWorks = [
   { id: 1, url: 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?auto=format&fit=crop&q=80&w=800', title: 'Corporate ID Card' },
@@ -841,6 +845,37 @@ export default function App() {
     }
   };
 
+  const handleSendSmsBroadcast = async (senderId: string, message: string) => {
+    try {
+      const res = await fetch('/api/admin/sms-broadcast', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authState.token}`,
+        },
+        body: JSON.stringify({ senderId, message })
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+      return { success: false, count: 0 };
+    } catch (err) {
+      return { success: false, count: 0 };
+    }
+  };
+
+  const handleGetSmsBroadcasts = async () => {
+    try {
+      const res = await fetch('/api/admin/sms-broadcasts', {
+        headers: { 'Authorization': `Bearer ${authState.token}` }
+      });
+      if (res.ok) return await res.json();
+      return [];
+    } catch (err) {
+      return [];
+    }
+  };
+
   // -------------------------------------------------------------
   // VIEW RENDERERS (State switcher)
   // -------------------------------------------------------------
@@ -866,7 +901,10 @@ export default function App() {
             
             {/* Service Tracking Hub */}
             <div className="pt-4">
-              <ServiceTracker />
+              <ServiceTracker 
+                isAdmin={authState.isAuthenticated} 
+                onBookingStatusUpdate={handleUpdateBookingStatus} 
+              />
             </div>
 
             {/* Hero Banner Panel */}
@@ -904,6 +942,9 @@ export default function App() {
                 </div>
               </div>
             </section>
+
+            {/* Welcome & Interactive Animated Dashboard Showcase */}
+            <HomeDashboardShowcase />
 
             {/* Quick Categories Overview Panel */}
             <section id="categories-grid" className="space-y-8">
@@ -1180,11 +1221,35 @@ export default function App() {
                       {ann.content}
                     </p>
 
-                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                    <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-[11px] text-slate-400">
                       <span>Publisher: <strong>{ann.author}</strong></span>
-                      <span className="text-[#0EA5E9] font-bold bg-sky-50 px-2 py-0.5 rounded uppercase font-mono text-[9px] tracking-wider">
-                        Official Notice
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Share:</span>
+                        <a
+                          href={`https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodeURIComponent(`📢 [ES Digital CSC] ${ann.title}\n\n${ann.content}\n\nVisit: ${window.location.origin}`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2 py-0.5 bg-sky-50 text-[#229ED9] hover:bg-sky-100 rounded text-[10px] font-bold transition-colors"
+                        >
+                          Telegram
+                        </a>
+                        <a
+                          href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`📢 [ES Digital CSC] *${ann.title}*\n\n${ann.content}\n\nVisit: ${window.location.origin}`)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2 py-0.5 bg-emerald-50 text-[#25D366] hover:bg-emerald-100 rounded text-[10px] font-bold transition-colors"
+                        >
+                          WhatsApp
+                        </a>
+                        <a
+                          href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.origin)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2 py-0.5 bg-blue-50 text-[#1877F2] hover:bg-blue-100 rounded text-[10px] font-bold transition-colors"
+                        >
+                          Facebook
+                        </a>
+                      </div>
                     </div>
                   </article>
                 ))
@@ -1234,6 +1299,11 @@ export default function App() {
               >
                 {t('bookService')}
               </button>
+            </div>
+
+            {/* Interactive Service Cost Estimator & Booking Calendar Widget */}
+            <div className="max-w-5xl mx-auto">
+              <ServiceCostEstimator onBookingSubmitted={(newBooking) => setBookings(prev => [newBooking, ...prev])} />
             </div>
 
             {/* Category Pills & Search/Sort */}
@@ -1603,6 +1673,29 @@ export default function App() {
               {/* Map & Coordinates panel - 2/5 cols */}
               <div className="md:col-span-2 space-y-6 text-left">
                 
+                {/* WhatsApp Direct Messaging Card */}
+                <div className="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-6 shadow-lg shadow-emerald-900/10 border border-emerald-500 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="w-6 h-6 text-emerald-200" />
+                    <div>
+                      <h4 className="font-extrabold text-white text-sm font-display">Instant WhatsApp Inquiry</h4>
+                      <p className="text-[11px] text-emerald-100">Direct chat with ES Digital tech support team</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-emerald-50 leading-relaxed font-medium">
+                    Have a quick question about repair fees or digital publishing? Click below to start a pre-filled chat on WhatsApp.
+                  </p>
+                  <a
+                    href="https://wa.me/251995852194?text=Hello%20ES%20Digital%20Service%20Center!%20I%20would%20like%20to%20inquire%20about%20your%20computer%20repair%20and%20digital%20printing%20services%20in%20Kore%20Town."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 w-full py-3 bg-white text-emerald-800 hover:bg-emerald-50 font-black text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
+                  >
+                    <MessageCircle className="w-4 h-4 text-emerald-600 fill-emerald-600" />
+                    <span>Contact via WhatsApp (+251 995 852 194)</span>
+                  </a>
+                </div>
+
                 {/* Physical details block */}
                 <div className="bg-slate-900 text-slate-300 rounded-2xl border border-slate-800 p-6 space-y-5 shadow-md">
                   <h3 className="font-display font-bold text-white text-sm uppercase tracking-wider">
@@ -1706,8 +1799,10 @@ export default function App() {
                     onChange={(e) => setLoginPassword(e.target.value)}
                     className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#0EA5E9] bg-slate-50"
                   />
-                  <div className="mt-2 text-[10px] text-slate-400 font-mono">
-                    💡 Seed credentials: Use <strong>admin</strong> and <strong>admin123</strong> to audit.
+                  <div className="mt-2 text-[10px] text-slate-500 bg-indigo-50/80 p-2.5 rounded-lg border border-indigo-100 font-mono space-y-0.5">
+                    <p className="font-bold text-indigo-900">👑 Admin Sign-In Credentials:</p>
+                    <p>• Username/Email: <strong className="text-indigo-700">Jemal Fano</strong> or <strong className="text-indigo-700">jemalfan030@gmail.com</strong></p>
+                    <p>• Password: <strong className="text-indigo-700">Esb#2026</strong> (or <strong className="text-indigo-700">admin123</strong> / <strong className="text-indigo-700">admin</strong>)</p>
                   </div>
                 </div>
 
@@ -1786,8 +1881,10 @@ export default function App() {
                 { id: 'bookings', label: 'Service Bookings Desk' },
                 { id: 'history', label: 'Transaction History' },
                 { id: 'reports', label: 'Reports & Analytics' },
+                { id: 'commission', label: 'Commission Analytics' },
                 { id: 'users', label: 'Customer Book (CRM)' },
                 { id: 'share', label: 'Communications & Inbox' },
+                { id: 'payroll', label: 'Staff Payroll' },
                 { id: 'assets', label: 'Digital Assets Store' },
                 { id: 'logs', label: 'Security Audit Logs' },
               ].map((sub) => {
@@ -1850,11 +1947,20 @@ export default function App() {
               {adminSubTab === 'reports' && (
                 <AdminReport 
                   transactions={transactions}
+                  bookings={bookings}
+                />
+              )}
+              {adminSubTab === 'commission' && (
+                <AdminCommission 
+                  transactions={transactions}
                 />
               )}
               {adminSubTab === 'users' && (
                 <AdminUsers 
                   customers={customers}
+                  bookings={bookings}
+                  transactions={transactions}
+                  feedback={feedback}
                   onRefresh={() => loadAdminData(authState.token!)}
                 />
               )}
@@ -1862,6 +1968,9 @@ export default function App() {
                 <AdminShare 
                   announcements={announcements}
                   feedback={feedback}
+                  customers={customers}
+                  transactions={transactions}
+                  bookings={bookings}
                   onAddAnnouncement={handleAddAnnouncement}
                   onDeleteAnnouncement={handleDeleteAnnouncement}
                   onUpdateFeedbackStatus={handleUpdateFeedbackStatus}
@@ -1869,7 +1978,12 @@ export default function App() {
                   onDeleteFeedback={handleDeleteFeedback}
                   onSendBroadcast={handleSendBroadcast}
                   onGetBroadcasts={handleGetBroadcasts}
+                  onSendSmsBroadcast={handleSendSmsBroadcast}
+                  onGetSmsBroadcasts={handleGetSmsBroadcasts}
                 />
+              )}
+              {adminSubTab === 'payroll' && (
+                <AdminPayroll />
               )}
               {adminSubTab === 'assets' && (
                 <AdminAssets 

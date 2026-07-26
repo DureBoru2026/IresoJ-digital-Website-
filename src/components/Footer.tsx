@@ -118,9 +118,14 @@ export default function Footer({ setActiveTab }: FooterProps) {
               </li>
               <li className="flex items-center space-x-2.5 text-slate-400">
                 <Mail className="w-4 h-4 text-[#0EA5E9] shrink-0" />
-                <a href="mailto:iresojemal44@gmail.com" className="hover:text-white transition-colors break-all">
-                  iresojemal44@gmail.com
-                </a>
+                <div className="flex flex-col">
+                  <a href="mailto:jemalfan030@gmail.com" className="hover:text-white transition-colors break-all">
+                    jemalfan030@gmail.com
+                  </a>
+                  <a href="mailto:iresojemal44@gmail.com" className="hover:text-white transition-colors text-[11px] text-slate-500 break-all">
+                    iresojemal44@gmail.com
+                  </a>
+                </div>
               </li>
             </ul>
           </div>
@@ -201,6 +206,15 @@ export default function Footer({ setActiveTab }: FooterProps) {
           <div className="flex items-center gap-4">
             <span className="text-[10px] font-black uppercase tracking-widest text-slate-600 mr-2">Follow Our Community</span>
             <div className="flex items-center gap-3">
+              <a 
+                href="https://wa.me/251995852194?text=Hello%20ES%20Digital%20Service%20Center!%20I%20would%20like%20to%20inquire%20about%20your%20services." 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400 hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                title="Contact via WhatsApp"
+              >
+                <MessageCircle className="w-4 h-4" />
+              </a>
               <a 
                 href="https://facebook.com/ESDigitalCSC" 
                 target="_blank" 

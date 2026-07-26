@@ -99,18 +99,26 @@ export default function MobileAirtimePurchase({ onSubmitTransaction }: MobileAir
           </div>
         </div>
 
-        {/* Amount Selection */}
+        {/* Direct Ethio Telecom Notice */}
+        <div className="bg-sky-50 border border-sky-100 p-3 rounded-xl flex items-center gap-2 text-xs text-sky-800 font-medium">
+          <ShieldCheck className="w-4 h-4 text-sky-600 shrink-0" />
+          <span>Ethio Telecom Provider Mobile Cards purchased directly via telebirr and dispatched instantly to your customer phone number.</span>
+        </div>
+
+        {/* Amount Selection with 5 ETB, 10 ETB, 15 ETB, 25 ETB, 50 ETB, 100 ETB Card Vouchers */}
         <div className="space-y-2">
-          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">{t('amountEtb')}</label>
+          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Select Mobile Card Denomination (ETB)</label>
           <div className="flex flex-wrap gap-2">
-            {[25, 50, 100, 500].map(val => (
+            {[5, 10, 15, 25, 50, 100, 250, 500].map(val => (
               <button
                 key={val}
                 type="button"
                 onClick={() => setAmount(val)}
-                className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${amount === val ? 'bg-slate-800 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  amount === val ? 'bg-slate-900 text-amber-300 shadow-md ring-2 ring-sky-500' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
               >
-                {val}
+                {val} BIRR CARD
               </button>
             ))}
           </div>
