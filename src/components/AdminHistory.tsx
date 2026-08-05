@@ -163,7 +163,7 @@ export default function AdminHistory({ transactions, onRefresh }: AdminHistoryPr
 
   // Generate verification URL for QR payload
   const getQrPayload = (tx: Transaction) => {
-    return `https://es-digital.ethiopia/verify-receipt?ref=${encodeURIComponent(tx.referenceNumber)}&amount=${tx.amount}&gateway=${encodeURIComponent(tx.paymentGateway)}&status=${tx.status}&date=${encodeURIComponent(tx.date)}`;
+    return `https://IresoJ-digital-computer-services-platfo.vercel.app/verify-receipt?ref=${encodeURIComponent(tx.referenceNumber)}&amount=${tx.amount}&gateway=${encodeURIComponent(tx.paymentGateway)}&status=${tx.status}&date=${encodeURIComponent(tx.date)}`;
   };
 
   // Printable Receipt & Verification Worksheet

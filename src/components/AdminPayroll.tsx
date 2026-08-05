@@ -102,6 +102,7 @@ export default function AdminPayroll() {
   const [selectedStatus, setSelectedStatus] = useState<'All' | 'paid' | 'pending' | 'processing'>('All');
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState<PayrollRecord | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -224,9 +225,13 @@ export default function AdminPayroll() {
   };
 
   const handleDeleteRecord = (id: string) => {
-    if (window.confirm('Are you sure you want to delete this staff payroll record?')) {
-      setPayrollList(prev => prev.filter(p => p.id !== id));
-    }
+    setDeleteConfirmId(id);
+  };
+
+  const handleExecuteDelete = () => {
+    if (!deleteConfirmId) return;
+    setPayrollList(prev => prev.filter(p => p.id !== deleteConfirmId));
+    setDeleteConfirmId(null);
   };
 
   const handleToggleStatus = (id: string, currentStatus: PayrollRecord['paymentStatus']) => {
@@ -523,7 +528,7 @@ export default function AdminPayroll() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `ES_Digital_Staff_Payroll_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `IresoJ_Digital_Staff_Payroll_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -1012,6 +1017,37 @@ export default function AdminPayroll() {
         </div>
       )}
 
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Accidental Deletion Shield</h3>
+            </div>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Are you sure you want to delete this staff payroll record? This action is permanent and cannot be undone. Please confirm to proceed.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmId(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-xs shadow-md shadow-red-200 transition-all cursor-pointer"
+              >
+                Yes, Delete Permanent
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

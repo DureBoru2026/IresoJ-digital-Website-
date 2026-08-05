@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Check, AlertCircle, ShoppingBag, Terminal, Laptop } from 'lucide-react';
+import { Plus, Edit2, Trash2, Check, AlertCircle, ShoppingBag, Terminal, Laptop, Upload } from 'lucide-react';
 import { ProductService } from '../types';
 import { formatETB } from '../utils';
 
@@ -26,6 +26,43 @@ export default function AdminProducts({ products, onAddProduct, onUpdateProduct,
 
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer es-digital-csc-admin-secret-session-token'
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.json();
+      if (data.success && data.fileUrl) {
+        setImageUrl(data.fileUrl);
+        setMessage({ text: 'Image uploaded successfully from local device!', type: 'success' });
+        setTimeout(() => setMessage(null), 3000);
+      } else {
+        setMessage({ text: data.error || 'Failed to upload image.', type: 'error' });
+      }
+    } catch (err) {
+      setMessage({ text: 'Error uploading file to local server.', type: 'error' });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const handleStartAdd = () => {
     setEditingId(null);
@@ -107,22 +144,29 @@ export default function AdminProducts({ products, onAddProduct, onUpdateProduct,
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you absolutely sure you want to delete this catalog item? This cannot be undone.')) {
-      setLoading(true);
-      try {
-        const success = await onDeleteProduct(id);
-        if (success) {
-          setMessage({ text: 'Item deleted successfully.', type: 'success' });
-          setTimeout(() => setMessage(null), 3000);
-        } else {
-          setMessage({ text: 'Deletion failed.', type: 'error' });
-        }
-      } catch (err) {
-        setMessage({ text: 'Failed to communicate deletion.', type: 'error' });
-      } finally {
-        setLoading(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const confirmDelete = (id: string) => {
+    setDeleteConfirmId(id);
+  };
+
+  const handleExecuteDelete = async () => {
+    if (!deleteConfirmId) return;
+    const id = deleteConfirmId;
+    setDeleteConfirmId(null);
+    setLoading(true);
+    try {
+      const success = await onDeleteProduct(id);
+      if (success) {
+        setMessage({ text: 'Item deleted successfully.', type: 'success' });
+        setTimeout(() => setMessage(null), 3000);
+      } else {
+        setMessage({ text: 'Deletion failed.', type: 'error' });
       }
+    } catch (err) {
+      setMessage({ text: 'Failed to communicate deletion.', type: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -242,17 +286,47 @@ export default function AdminProducts({ products, onAddProduct, onUpdateProduct,
               />
             </div>
 
-            {/* Image URL */}
-            <div className="md:col-span-3">
-              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cover Image URL *</label>
-              <input
-                type="url"
-                required
-                placeholder="https://images.unsplash.com/photo-..."
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="w-full text-sm px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
-              />
+            {/* Image URL & Upload */}
+            <div className="md:col-span-3 space-y-2">
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cover Image / File Upload</label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[9px] font-medium text-slate-400 mb-1">Paste Image URL</label>
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://images.unsplash.com/photo-..."
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    className="w-full text-sm px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-medium text-slate-400 mb-1">Or Upload from Device</label>
+                  <div className="relative flex items-center justify-center w-full h-[42px] bg-white border border-dashed border-slate-300 rounded-xl hover:border-blue-500 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*,video/*,application/pdf,application/zip,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                      onChange={handleImageUpload}
+                      disabled={uploadingImage}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full disabled:cursor-not-allowed"
+                    />
+                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 pointer-events-none">
+                      <Upload className={`w-4 h-4 text-slate-400 ${uploadingImage ? 'animate-bounce' : ''}`} />
+                      <span>{uploadingImage ? 'Uploading file...' : 'Choose image / video / file'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {imageUrl && (
+                <div className="mt-2 p-2 bg-slate-100/60 rounded-xl flex items-center gap-3">
+                  <span className="text-[10px] text-slate-500 font-mono">Current path:</span>
+                  <span className="text-xs font-bold text-blue-600 truncate max-w-md">{imageUrl}</span>
+                  {imageUrl.startsWith('/uploads') && (
+                    <span className="text-[9px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-black">LOCAL FILE</span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Description */}
@@ -376,7 +450,7 @@ export default function AdminProducts({ products, onAddProduct, onUpdateProduct,
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(p.id)}
+                            onClick={() => confirmDelete(p.id)}
                             className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                             title="Delete Item"
                           >
@@ -389,6 +463,37 @@ export default function AdminProducts({ products, onAddProduct, onUpdateProduct,
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Accidental Deletion Shield</h3>
+            </div>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Are you sure you want to delete this catalog item? This action is permanent and cannot be undone. Please confirm to proceed.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmId(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-xs shadow-md shadow-red-200 transition-all cursor-pointer"
+              >
+                Yes, Delete Permanent
+              </button>
+            </div>
           </div>
         </div>
       )}

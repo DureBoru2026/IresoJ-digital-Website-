@@ -21,10 +21,13 @@ export default function AdminAssets({ assets, onAddAsset, onDeleteAsset }: Admin
   const [showAddForm, setShowAddForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
   
   // Bulk selection state
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([]);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [deleteSingleId, setDeleteSingleId] = useState<string | null>(null);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
 
   // Category & search filtering state
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,6 +43,39 @@ export default function AdminAssets({ assets, onAddAsset, onDeleteAsset }: Admin
     fileUrl: '',
     description: ''
   });
+
+  const handleLocalFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingFile(true);
+    const form = new FormData();
+    form.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer es-digital-csc-admin-secret-session-token'
+        },
+        body: form
+      });
+
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+      if (data.success && data.fileUrl) {
+        setFormData(prev => ({ ...prev, fileUrl: data.fileUrl }));
+        setMessage({ text: 'Asset file uploaded successfully from local device!', type: 'success' });
+        setTimeout(() => setMessage(null), 3000);
+      } else {
+        setMessage({ text: data.error || 'Failed to upload asset file.', type: 'error' });
+      }
+    } catch (err) {
+      setMessage({ text: 'Error uploading asset file to server.', type: 'error' });
+    } finally {
+      setUploadingFile(false);
+    }
+  };
 
   const getIcon = (type: DigitalAsset['type']) => {
     switch (type) {
@@ -123,10 +159,33 @@ export default function AdminAssets({ assets, onAddAsset, onDeleteAsset }: Admin
     );
   };
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = () => {
     if (selectedAssetIds.length === 0) return;
-    if (!window.confirm(`Are you sure you want to delete ${selectedAssetIds.length} selected asset(s)?`)) return;
+    setShowBulkConfirm(true);
+  };
 
+  const handleSingleDelete = async () => {
+    if (!deleteSingleId) return;
+    const id = deleteSingleId;
+    setDeleteSingleId(null);
+    setLoading(true);
+    try {
+      const ok = await onDeleteAsset(id);
+      if (ok) {
+        setMessage({ text: 'Asset deleted successfully.', type: 'success' });
+        setTimeout(() => setMessage(null), 3000);
+      } else {
+        setMessage({ text: 'Failed to delete asset.', type: 'error' });
+      }
+    } catch (err) {
+      setMessage({ text: 'Error deleting asset.', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const executeBulkDelete = async () => {
+    setShowBulkConfirm(false);
     setBulkDeleting(true);
     let successCount = 0;
 
@@ -329,19 +388,48 @@ export default function AdminAssets({ assets, onAddAsset, onDeleteAsset }: Admin
                 </div>
               )}
 
-              <div className="md:col-span-2 space-y-1.5">
-                <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 ml-1">File URL / Download Link</label>
-                <div className="relative">
-                  <Upload className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    required
-                    type="url"
-                    placeholder="https://example.com/file.zip"
-                    value={formData.fileUrl}
-                    onChange={e => setFormData({ ...formData, fileUrl: e.target.value })}
-                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:border-[#0EA5E9] transition-all text-sm"
-                  />
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[11px] font-black uppercase tracking-wider text-slate-500 ml-1">File URL & Device Upload</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[9px] font-medium text-slate-400 mb-1">Paste File Download Link</label>
+                    <div className="relative">
+                      <Upload className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        required
+                        type="url"
+                        placeholder="https://example.com/file.zip"
+                        value={formData.fileUrl}
+                        onChange={e => setFormData({ ...formData, fileUrl: e.target.value })}
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl focus:outline-none focus:border-[#0EA5E9] transition-all text-xs font-semibold"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-medium text-slate-400 mb-1">Or Upload File from Device</label>
+                    <div className="relative flex items-center justify-center w-full h-[38px] bg-slate-50 border border-dashed border-slate-200 rounded-xl hover:border-sky-500 transition-colors">
+                      <input
+                        type="file"
+                        onChange={handleLocalFileUpload}
+                        disabled={uploadingFile}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full disabled:cursor-not-allowed"
+                      />
+                      <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 pointer-events-none">
+                        <Upload className={`w-3.5 h-3.5 text-slate-400 ${uploadingFile ? 'animate-bounce' : ''}`} />
+                        <span className="truncate max-w-[150px]">{uploadingFile ? 'Uploading file...' : 'Choose file / template / media'}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+                {formData.fileUrl && (
+                  <div className="p-2 bg-slate-50 rounded-xl flex items-center gap-2 border border-slate-100">
+                    <span className="text-[9px] text-slate-400 font-mono">Uploaded path:</span>
+                    <span className="text-[11px] font-bold text-sky-600 truncate max-w-sm">{formData.fileUrl}</span>
+                    {formData.fileUrl.startsWith('/uploads') && (
+                      <span className="text-[8px] bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded font-black shrink-0">LOCAL</span>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="md:col-span-2 space-y-1.5">
@@ -494,7 +582,7 @@ export default function AdminAssets({ assets, onAddAsset, onDeleteAsset }: Admin
                             <Download className="w-4 h-4" />
                           </a>
                           <button
-                            onClick={() => onDeleteAsset(asset.id)}
+                            onClick={() => setDeleteSingleId(asset.id)}
                             className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                             title="Delete Asset"
                           >
@@ -510,6 +598,69 @@ export default function AdminAssets({ assets, onAddAsset, onDeleteAsset }: Admin
           </table>
         </div>
       </div>
+      {deleteSingleId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Confirm Deletion</h3>
+            </div>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Are you sure you want to delete this asset? This action is permanent and cannot be undone. Please confirm to proceed.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteSingleId(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSingleDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-xs shadow-md shadow-red-200 transition-all cursor-pointer"
+              >
+                Yes, Delete Permanent
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkConfirm && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Confirm Bulk Deletion</h3>
+            </div>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Are you sure you want to delete the {selectedAssetIds.length} selected asset(s) in bulk? This action is permanent and cannot be undone.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowBulkConfirm(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={executeBulkDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-xs shadow-md shadow-red-200 transition-all cursor-pointer"
+              >
+                Yes, Delete All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

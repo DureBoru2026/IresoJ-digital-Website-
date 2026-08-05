@@ -674,7 +674,7 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
 
           <div class="header">
             <div>
-              <div class="logo">ES <span>DIGITAL</span> COMPUTER SERVICES</div>
+              <div class="logo">IresoJ <span>DIGITAL</span> COMPUTER & MEDIA SERVICES</div>
               <div style="font-size: 11px; color: #64748b; font-weight: 600; margin-top: 2px;">
                 Kore Town Center • Addis Ababa, Ethiopia • Hotline: +251 995 852 194 / +251 911 223 344
               </div>

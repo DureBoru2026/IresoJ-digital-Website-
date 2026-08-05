@@ -68,7 +68,7 @@ export default function AdminShare({
   }, [transactions, bookings, feedback, customers]);
 
   // Bulk SMS Promotional Broadcast States
-  const [smsSenderId, setSmsSenderId] = useState('ES_DIGITAL');
+  const [smsSenderId, setSmsSenderId] = useState('IresoJ_DIGITAL');
   const [smsMessage, setSmsMessage] = useState('');
   const [smsBroadcasts, setSmsBroadcasts] = useState<SmsBroadcast[]>([]);
   const [smsStatus, setSmsStatus] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -83,6 +83,9 @@ export default function AdminShare({
     senderOrSubject: string;
     messagePreview: string;
   } | null>(null);
+
+  const [deleteAnnId, setDeleteAnnId] = useState<string | null>(null);
+  const [deleteFbId, setDeleteFbId] = useState<string | null>(null);
 
   // Newsletter Broadcast States
   const [broadcasts, setBroadcasts] = React.useState<any[]>([]);
@@ -129,7 +132,7 @@ export default function AdminShare({
       type: 'sms',
       title: 'Confirm Bulk SMS Broadcast',
       recipientCount: crmPhoneNumbers.length,
-      senderOrSubject: smsSenderId || 'ES_DIGITAL',
+      senderOrSubject: smsSenderId || 'IresoJ_DIGITAL',
       messagePreview: smsMessage
     });
   };
@@ -140,7 +143,7 @@ export default function AdminShare({
 
     try {
       if (onSendSmsBroadcast) {
-        const result = await onSendSmsBroadcast(smsSenderId || 'ES_DIGITAL', smsMessage);
+        const result = await onSendSmsBroadcast(smsSenderId || 'IresoJ_DIGITAL', smsMessage);
         if (result.success) {
           setSmsStatus({
             text: `SMS Promotional Campaign Dispatched! Message sent to ${result.count} customer phone numbers.`,
@@ -271,17 +274,22 @@ export default function AdminShare({
     }
   };
 
-  const handleDeleteAnn = async (id: string) => {
-    if (window.confirm('Delete this announcement? It will disappear from the public news feed.')) {
-      try {
-        const success = await onDeleteAnnouncement(id);
-        if (success) {
-          setAnnMessage({ text: 'Announcement deleted.', type: 'success' });
-          setTimeout(() => setAnnMessage(null), 3000);
-        }
-      } catch (err) {
-        console.error(err);
+  const handleDeleteAnn = (id: string) => {
+    setDeleteAnnId(id);
+  };
+
+  const handleExecuteDeleteAnn = async () => {
+    if (!deleteAnnId) return;
+    const id = deleteAnnId;
+    setDeleteAnnId(null);
+    try {
+      const success = await onDeleteAnnouncement(id);
+      if (success) {
+        setAnnMessage({ text: 'Announcement deleted.', type: 'success' });
+        setTimeout(() => setAnnMessage(null), 3000);
       }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -330,17 +338,22 @@ export default function AdminShare({
     }
   };
 
-  const handleDeleteFeedback = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this customer feedback record from the inbox?')) {
-      try {
-        const success = await onDeleteFeedback(id);
-        if (success) {
-          setFeedbackMessage({ text: 'Inquiry deleted.', type: 'success' });
-          setTimeout(() => setFeedbackMessage(null), 3000);
-        }
-      } catch (err) {
-        console.error(err);
+  const handleDeleteFeedback = (id: string) => {
+    setDeleteFbId(id);
+  };
+
+  const handleExecuteDeleteFeedback = async () => {
+    if (!deleteFbId) return;
+    const id = deleteFbId;
+    setDeleteFbId(null);
+    try {
+      const success = await onDeleteFeedback(id);
+      if (success) {
+        setFeedbackMessage({ text: 'Inquiry deleted.', type: 'success' });
+        setTimeout(() => setFeedbackMessage(null), 3000);
       }
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -849,7 +862,7 @@ export default function AdminShare({
                   <input
                     type="text"
                     required
-                    placeholder="ES_DIGITAL"
+                    placeholder="IresoJ_DIGITAL"
                     value={smsSenderId}
                     onChange={(e) => setSmsSenderId(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 text-white px-3.5 py-2.5 rounded-xl focus:outline-none focus:border-emerald-500 transition-all text-xs font-bold"
@@ -1153,6 +1166,69 @@ export default function AdminShare({
         </div>
       )}
 
+      {deleteAnnId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-200 text-left">
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Accidental Deletion Shield</h3>
+            </div>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Delete this announcement? It will disappear from the public news feed permanently and cannot be undone. Please confirm to proceed.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteAnnId(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteDeleteAnn}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-xs shadow-md shadow-red-200 transition-all cursor-pointer"
+              >
+                Yes, Delete Permanent
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteFbId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-200 text-left">
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Accidental Deletion Shield</h3>
+            </div>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Are you sure you want to delete this customer feedback record from the inbox permanently? This action cannot be undone. Please confirm to proceed.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteFbId(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteDeleteFeedback}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-xs shadow-md shadow-red-200 transition-all cursor-pointer"
+              >
+                Yes, Delete Permanent
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

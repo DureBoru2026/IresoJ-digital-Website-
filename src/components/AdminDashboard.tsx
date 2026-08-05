@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Activity, 
   Calendar, 
@@ -48,6 +49,7 @@ interface AdminDashboardProps {
   onUpdateProduct?: (id: string, payload: Partial<ProductService>) => Promise<boolean>;
   onRefresh?: () => Promise<void> | void;
   lastUpdated?: string;
+  isLoading?: boolean;
 }
 
 const CHART_COLORS = ['#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
@@ -60,14 +62,71 @@ export default function AdminDashboard({
   onSetTab, 
   onUpdateProduct,
   onRefresh,
-  lastUpdated
+  lastUpdated,
+  isLoading
 }: AdminDashboardProps) {
   
   const today = new Date().toISOString().split('T')[0];
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isGeneratingCSV, setIsGeneratingCSV] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
   const [localLastUpdated, setLocalLastUpdated] = useState<string>(
     lastUpdated || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
   );
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        {/* Header Shimmer */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <div className="h-7 shimmer-bg rounded-lg w-48" />
+            <div className="h-4 shimmer-bg rounded w-80" />
+          </div>
+          <div className="flex gap-2">
+            <div className="h-9 shimmer-bg rounded-xl w-32" />
+            <div className="h-9 shimmer-bg rounded-xl w-32" />
+          </div>
+        </div>
+
+        {/* Stats Grid Shimmer */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between">
+                <div className="h-3 shimmer-bg rounded w-20" />
+                <div className="w-8 h-8 rounded-xl shimmer-bg" />
+              </div>
+              <div className="h-8 shimmer-bg rounded-lg w-24" />
+              <div className="h-3 shimmer-bg rounded w-2/3" />
+            </div>
+          ))}
+        </div>
+
+        {/* Charts and Feeds Split Shimmer */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          <div className="xl:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 space-y-4 shadow-xs">
+            <div className="h-5 shimmer-bg rounded w-1/4" />
+            <div className="h-64 shimmer-bg rounded-2xl w-full" />
+          </div>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 space-y-4 shadow-xs">
+            <div className="h-5 shimmer-bg rounded w-1/3" />
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map(j => (
+                <div key={j} className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full shimmer-bg shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3.5 shimmer-bg rounded w-2/3" />
+                    <div className="h-2.5 shimmer-bg rounded w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -86,57 +145,72 @@ export default function AdminDashboard({
 
   // Export Current Booking and Transaction Data as CSV
   const handleExportCSV = () => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    
-    // Header line
-    const csvRows: string[] = [
-      'RECORD TYPE,REFERENCE ID,CUSTOMER NAME,CONTACT PHONE,ITEM / SERVICE / PURPOSE,AMOUNT (ETB),PAYMENT METHOD/GATEWAY,STATUS,DATE,TIME'
-    ];
+    if (isGeneratingCSV) return;
+    setIsGeneratingCSV(true);
 
-    // Bookings
-    (bookings || []).forEach(b => {
-      const row = [
-        'Booking',
-        `"${(b.id || '').replace(/"/g, '""')}"`,
-        `"${(b.customerName || '').replace(/"/g, '""')}"`,
-        `"${(b.customerPhone || '').replace(/"/g, '""')}"`,
-        `"${(b.serviceTitle || '').replace(/"/g, '""')}"`,
-        0,
-        `"${(b.paymentStatus || 'unpaid').replace(/"/g, '""')}"`,
-        `"${(b.status || 'pending').replace(/"/g, '""')}"`,
-        `"${(b.bookingDate || b.date || '').replace(/"/g, '""')}"`,
-        `"${(b.bookingTime || '').replace(/"/g, '""')}"`
-      ].join(',');
-      csvRows.push(row);
-    });
+    setTimeout(() => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      // Header line
+      const csvRows: string[] = [
+        'RECORD TYPE,REFERENCE ID,CUSTOMER NAME,CONTACT PHONE,ITEM / SERVICE / PURPOSE,AMOUNT (ETB),PAYMENT METHOD/GATEWAY,STATUS,DATE,TIME'
+      ];
 
-    // Transactions
-    (transactions || []).forEach(t => {
-      const row = [
-        'Transaction',
-        `"${(t.referenceNumber || t.id || '').replace(/"/g, '""')}"`,
-        `"${(t.customerName || '').replace(/"/g, '""')}"`,
-        `"${(t.customerPhone || '').replace(/"/g, '""')}"`,
-        `"${(t.purpose || '').replace(/"/g, '""')}"`,
-        t.amount || 0,
-        `"${(t.paymentGateway || 'telebirr').replace(/"/g, '""')}"`,
-        `"${(t.status || 'pending').replace(/"/g, '""')}"`,
-        `"${(t.date || '').replace(/"/g, '""')}"`,
-        'N/A'
-      ].join(',');
-      csvRows.push(row);
-    });
+      // Bookings
+      (bookings || []).forEach(b => {
+        const row = [
+          'Booking',
+          `"${(b.id || '').replace(/"/g, '""')}"`,
+          `"${(b.customerName || '').replace(/"/g, '""')}"`,
+          `"${(b.customerPhone || '').replace(/"/g, '""')}"`,
+          `"${(b.serviceTitle || '').replace(/"/g, '""')}"`,
+          0,
+          `"${(b.paymentStatus || 'unpaid').replace(/"/g, '""')}"`,
+          `"${(b.status || 'pending').replace(/"/g, '""')}"`,
+          `"${(b.bookingDate || b.date || '').replace(/"/g, '""')}"`,
+          `"${(b.bookingTime || '').replace(/"/g, '""')}"`
+        ].join(',');
+        csvRows.push(row);
+      });
 
-    const csvContent = '\uFEFF' + csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `Command_Center_Audit_Records_${todayStr}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+      // Transactions
+      (transactions || []).forEach(t => {
+        const row = [
+          'Transaction',
+          `"${(t.referenceNumber || t.id || '').replace(/"/g, '""')}"`,
+          `"${(t.customerName || '').replace(/"/g, '""')}"`,
+          `"${(t.customerPhone || '').replace(/"/g, '""')}"`,
+          `"${(t.purpose || '').replace(/"/g, '""')}"`,
+          t.amount || 0,
+          `"${(t.paymentGateway || 'telebirr').replace(/"/g, '""')}"`,
+          `"${(t.status || 'pending').replace(/"/g, '""')}"`,
+          `"${(t.date || '').replace(/"/g, '""')}"`,
+          'N/A'
+        ].join(',');
+        csvRows.push(row);
+      });
+
+      const csvContent = '\uFEFF' + csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Command_Center_Audit_Records_${todayStr}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Set toast notice
+      setToast({
+        message: `Command Center CSV Audit records compiled! ${csvRows.length - 1} records successfully exported and downloaded.`,
+        type: 'success'
+      });
+      setIsGeneratingCSV(false);
+      setTimeout(() => {
+        setToast(null);
+      }, 4000);
+    }, 1200); // Realistic compilations and UI response simulator
   };
 
   const stats = useMemo(() => {
@@ -271,11 +345,16 @@ export default function AdminDashboard({
           {/* Export CSV Button */}
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md shadow-emerald-200/60 transition-all cursor-pointer"
-            title="Export current bookings and transaction audit records as CSV"
+            disabled={isGeneratingCSV}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md shadow-emerald-200/60 transition-all cursor-pointer disabled:opacity-60"
+            title="Download current bookings and transaction audit records as CSV"
           >
-            <Download className="w-3.5 h-3.5 text-amber-300" />
-            <span>Export CSV</span>
+            {isGeneratingCSV ? (
+              <RefreshCw className="w-3.5 h-3.5 text-amber-300 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5 text-amber-300" />
+            )}
+            <span>{isGeneratingCSV ? 'Compiling CSV...' : 'Download CSV'}</span>
           </button>
 
           {/* Date Badge */}
@@ -308,7 +387,7 @@ export default function AdminDashboard({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <button
             onClick={() => onSetTab('products')}
             className="flex items-center gap-3.5 p-4 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-sky-500/50 rounded-2xl transition-all cursor-pointer group text-left shadow-xs"
@@ -356,6 +435,28 @@ export default function AdminDashboard({
               </span>
               <span className="text-[11px] text-slate-400 font-medium">
                 Log repair or IT service ticket
+              </span>
+            </div>
+          </button>
+
+          <button
+            onClick={handleExportCSV}
+            disabled={isGeneratingCSV}
+            className="flex items-center gap-3.5 p-4 bg-slate-800/70 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/50 rounded-2xl transition-all cursor-pointer group text-left shadow-xs disabled:opacity-60"
+          >
+            <div className="p-3 bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-slate-950 rounded-xl transition-colors">
+              {isGeneratingCSV ? (
+                <RefreshCw className="w-5 h-5 animate-spin" />
+              ) : (
+                <Download className="w-5 h-5" />
+              )}
+            </div>
+            <div>
+              <span className="text-xs font-black text-white group-hover:text-indigo-300 transition-colors block">
+                {isGeneratingCSV ? 'Generating CSV...' : 'Download CSV'}
+              </span>
+              <span className="text-[11px] text-slate-400 font-medium">
+                {isGeneratingCSV ? 'Compiling system audit logs...' : 'Export current bookings & transactions'}
               </span>
             </div>
           </button>
@@ -595,6 +696,33 @@ export default function AdminDashboard({
           </div>
         </div>
       </div>
+
+      {/* Floating Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="fixed top-24 right-6 z-[9999] max-w-sm bg-slate-900 border border-slate-700/60 rounded-2xl shadow-xl shadow-slate-950/40 p-4 flex gap-3.5"
+          >
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+              <CheckCircle className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-white mb-0.5">Success</p>
+              <p className="text-[11px] text-slate-300 leading-normal">{toast.message}</p>
+            </div>
+            <button 
+              onClick={() => setToast(null)}
+              className="flex-shrink-0 text-slate-400 hover:text-white text-xs font-bold px-1 transition-colors self-start cursor-pointer"
+            >
+              ✕
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

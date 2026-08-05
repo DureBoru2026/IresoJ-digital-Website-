@@ -28,6 +28,7 @@ export default function AdminBookings({ bookings, onRefresh, onUpdateStatus, onD
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState('');
   const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Email Notification modal states
   const [activeEmailBooking, setActiveEmailBooking] = useState<Booking | null>(null);
@@ -118,16 +119,17 @@ export default function AdminBookings({ bookings, onRefresh, onUpdateStatus, onD
     setEditNotes(notes || '');
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you absolutely sure you want to delete this booking reservation permanently?')) {
-      setSubmittingId(id);
-      try {
-        await onDelete(id);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setSubmittingId(null);
-      }
+  const handleExecuteDelete = async () => {
+    if (!deleteConfirmId) return;
+    const id = deleteConfirmId;
+    setDeleteConfirmId(null);
+    setSubmittingId(id);
+    try {
+      await onDelete(id);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubmittingId(null);
     }
   };
 
@@ -351,7 +353,7 @@ IresoJ Digital CSC Kore Town, West Arsi, Ethiopia`
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(22);
       doc.setFont('Helvetica', 'bold');
-      doc.text('ES DIGITAL CSC', 20, 24);
+      doc.text('IresoJ DIGITAL CSC', 20, 24);
 
       // Subtitle
       doc.setFontSize(9);
@@ -502,7 +504,7 @@ IresoJ Digital CSC Kore Town, West Arsi, Ethiopia`
       doc.text('Authorized Representative', 138, finalY + 28);
 
       // Save PDF
-      doc.save(`ES_Digital_Summary_${booking.customerName.replace(/\s+/g, '_')}_${booking.id}.pdf`);
+      doc.save(`IresoJ_Digital_Summary_${booking.customerName.replace(/\s+/g, '_')}_${booking.id}.pdf`);
     } catch (err) {
       console.error('PDF compiling failure:', err);
       alert('Failed to compile PDF summary report.');
@@ -823,7 +825,7 @@ IresoJ Digital CSC Kore Town, West Arsi, Ethiopia`
                   <div className="flex justify-between items-center pt-2 border-t border-slate-100">
                     <span className="text-[9px] font-mono text-slate-400 font-bold">ADMIN ACTIONS</span>
                     <button
-                      onClick={() => handleDelete(b.id)}
+                      onClick={() => setDeleteConfirmId(b.id)}
                       disabled={isLoading}
                       className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                       title="Delete booking completely"
@@ -1047,14 +1049,14 @@ IresoJ Digital CSC Kore Town, West Arsi, Ethiopia`
                   >
                     {/* Invoice header */}
                     <div className="text-center receipt-header">
-                      <h4 className="font-bold text-base tracking-tight text-slate-900 m-0">ES DIGITAL CSC</h4>
+                      <h4 className="font-bold text-base tracking-tight text-slate-900 m-0">IresoJ DIGITAL CSC</h4>
                       <p className="text-[9px] text-slate-500 m-0 leading-tight">Computing Service Center & Graphic Hub</p>
                       <p className="text-[8px] text-slate-500 m-0">Kore Town Main Road, West Arsi, Ethiopia</p>
-                      <p className="text-[8px] text-slate-500 m-0">Tel: +251 911 234 567 / Email: support@esdigital.com</p>
+                      <p className="text-[8px] text-slate-500 m-0">Tel: +251 995 852 194 / Email: support@iresojdigital.com</p>
                     </div>
 
                     <div className="my-4">
-                      <strong>INVOICE NO:</strong> ESD-{activeReceiptBooking.id.toUpperCase()}<br />
+                      <strong>INVOICE NO:</strong> IJ-{activeReceiptBooking.id.toUpperCase()}<br />
                       <strong>DATE      :</strong> {new Date().toLocaleDateString()}<br />
                       <strong>CLIENT    :</strong> {activeReceiptBooking.customerName}<br />
                       <strong>PHONE     :</strong> {activeReceiptBooking.customerPhone}<br />
@@ -1107,7 +1109,7 @@ IresoJ Digital CSC Kore Town, West Arsi, Ethiopia`
                       {/* Interactive corporate seal stamp */}
                       <div className="text-center">
                         <span className="seal-stamp">
-                          ES DIGITAL CSC<br />
+                          IresoJ DIGITAL CSC<br />
                           {activeReceiptBooking.paymentStatus === 'paid' ? '★ PAID IN FULL ★' : '★ VERIFIED LEDGER ★'}
                         </span>
                       </div>
@@ -1146,6 +1148,37 @@ IresoJ Digital CSC Kore Town, West Arsi, Ethiopia`
         )}
       </AnimatePresence>
 
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-red-600 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900">Accidental Deletion Shield</h3>
+            </div>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Are you sure you want to delete this booking reservation permanently? This action cannot be undone. Please confirm to proceed.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmId(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-all cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleExecuteDelete}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-xs shadow-md shadow-red-200 transition-all cursor-pointer"
+              >
+                Yes, Delete Permanent
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

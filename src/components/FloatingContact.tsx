@@ -9,7 +9,7 @@ export default function FloatingContact() {
     { 
       name: 'Contact via WhatsApp', 
       icon: <MessageCircle className="w-5 h-5" />, 
-      href: 'https://wa.me/251995852194?text=Hello%20ES%20Digital%20Service%20Center!%20I%20would%20like%20to%20inquire%20about%20your%20computer%20repair%20and%20digital%20printing%20services%20in%20Kore%20Town.', 
+      href: 'https://wa.me/251995852194?text=Hello%20IresoJ%20Digital%20CSC!%20I%20would%20like%20to%20inquire%20about%20your%20computer%20repair,%20media%20broadcast%20and%20printing%20services.', 
       color: 'bg-emerald-600',
       desc: 'Instant WhatsApp Inquiry'
     },
@@ -23,7 +23,7 @@ export default function FloatingContact() {
     { 
       name: 'Facebook Messenger', 
       icon: <MessageCircle className="w-5 h-5" />, 
-      href: 'https://m.me/ESDigitalCSC', 
+      href: 'https://m.me/IresoJDigitalCSC', 
       color: 'bg-[#0084FF]',
       desc: 'Official Support'
     },

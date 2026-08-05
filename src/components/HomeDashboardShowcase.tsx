@@ -223,7 +223,7 @@ export default function HomeDashboardShowcase() {
                   <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
                 </div>
                 <span className="text-xs font-mono font-bold text-slate-400 border-l border-slate-800 pl-3">
-                  es-digital-csc.app/dashboard
+                  IresoJ-digital-computer-services-platfo.vercel.app/dashboard
                 </span>
               </div>
 

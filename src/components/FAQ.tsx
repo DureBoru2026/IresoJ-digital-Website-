@@ -143,7 +143,7 @@ export default function FAQ() {
       {/* Social Quick Links */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <a 
-          href="https://facebook.com/ESDigitalCSC" 
+          href="https://facebook.com/IresoJDigitalCSC" 
           target="_blank" 
           rel="noopener noreferrer"
           className="flex items-center justify-between p-4 bg-[#1877F2]/5 border border-[#1877F2]/10 rounded-2xl group hover:bg-[#1877F2]/10 transition-all"

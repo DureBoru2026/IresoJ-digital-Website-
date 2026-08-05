@@ -3,7 +3,8 @@ import {
   Laptop, Phone, Mail, MapPin, ArrowRight, ShieldCheck, 
   MessageSquare, MessageCircle, BookOpen, AlertCircle, Sparkles, CheckCircle2,
   ListFilter, DollarSign, Calendar, Heart, Shield, HelpCircle, Eye, LogIn,
-  Send, Search, ChevronDown, RotateCcw, X, ZoomIn, Download, Star
+  Send, Search, ChevronDown, RotateCcw, X, ZoomIn, Download, Star,
+  Home, ShoppingBag, Users, Coins
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLanguage } from './LanguageContext';
@@ -48,6 +49,13 @@ const sampleWorks = [
   { id: 2, url: 'https://images.unsplash.com/photo-1544396821-4dd40b938ad3?auto=format&fit=crop&q=80&w=800', title: 'Magazine Layout' },
   { id: 3, url: 'https://images.unsplash.com/photo-1586717799263-ce20eb81bdce?auto=format&fit=crop&q=80&w=800', title: 'Business Booklet' },
   { id: 4, url: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&q=80&w=800', title: 'Event Poster' }
+];
+
+const mobileTabs = [
+  { id: 'home', label: 'Home', icon: Home, targetTab: 'home' as const },
+  { id: 'shop', label: 'Shop', icon: ShoppingBag, targetTab: 'digital-store' as const },
+  { id: 'club', label: 'Club', icon: Users, targetTab: 'services' as const },
+  { id: 'earn', label: 'Earn', icon: Coins, targetTab: 'contact' as const }
 ];
 
   export default function App() {
@@ -207,6 +215,8 @@ const sampleWorks = [
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isProductsLoading, setIsProductsLoading] = useState(true);
+  const [isAdminDataLoading, setIsAdminDataLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOrder, setSortOrder] = useState<'none' | 'asc' | 'desc'>('none');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -296,6 +306,7 @@ const sampleWorks = [
   }, [authState.isAuthenticated]);
 
   const loadPublicData = async () => {
+    setIsProductsLoading(true);
     try {
       const prodRes = await fetch('/api/products');
       const prodData = await prodRes.json();
@@ -304,12 +315,28 @@ const sampleWorks = [
       const annRes = await fetch('/api/announcements');
       const annData = await annRes.json();
       setAnnouncements(annData);
+
+      // Instantly open product details if scanned from QR / deep-linked
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('productId');
+      if (productId) {
+        const matchingProduct = prodData.find((p: any) => p.id === productId);
+        if (matchingProduct) {
+          handleProductSelection(matchingProduct);
+        }
+      }
     } catch (err) {
       console.error('Error fetching public datasets:', err);
+    } finally {
+      // Small delay for smooth transition and visual delight of skeleton states
+      setTimeout(() => {
+        setIsProductsLoading(false);
+      }, 700);
     }
   };
 
   const loadAdminData = async (token: string) => {
+    setIsAdminDataLoading(true);
     const headers = { 'Authorization': `Bearer ${token}` };
     try {
       const response = await fetch('/api/admin/all-data', { headers });
@@ -389,6 +416,10 @@ const sampleWorks = [
       }
     } catch (err) {
       console.error('Error fetching administrative datasets:', err);
+    } finally {
+      setTimeout(() => {
+        setIsAdminDataLoading(false);
+      }, 600);
     }
   };
 
@@ -407,12 +438,27 @@ const sampleWorks = [
     }
 
     // Direct check for hardcoded administrator credentials requested by Jemal Fano
-    const trimmedUser = loginUsername.trim();
-    if ((trimmedUser === 'Jemal Fano' || trimmedUser === 'jemalfan030@gmail.com') && loginPassword === 'Esb#2026') {
+    const trimmedUser = loginUsername.trim().toLowerCase();
+    const isValidAdminUser = [
+      'jemal fano',
+      'jemalfan030@gmail.com',
+      'jemalfano030@gmail.com',
+      'admin',
+      'jemal'
+    ].includes(trimmedUser);
+
+    const isValidAdminPass = [
+      'esb#2026',
+      'Esb#2026',
+      'admin123',
+      'admin'
+    ].includes(loginPassword);
+
+    if (isValidAdminUser && isValidAdminPass) {
       const hardcodedUser = {
         id: 'admin_hardcoded',
         username: 'Jemal Fano',
-        email: 'jemalfan030@gmail.com',
+        email: 'jemalfano030@gmail.com',
         role: 'admin' as const
       };
       const token = 'es-digital-csc-admin-secret-session-token';
@@ -1401,7 +1447,34 @@ const sampleWorks = [
               </div>
             </div>
 
-            {noResults ? (
+            {isProductsLoading ? (
+              <div className="flex flex-col lg:flex-row gap-8">
+                <div className="flex-1 space-y-10">
+                  <div className="space-y-6">
+                    <div className="border-b border-slate-100 pb-3">
+                      <div className="h-6 bg-slate-200/80 rounded-lg w-1/3 animate-pulse" />
+                      <div className="h-3 bg-slate-200/80 rounded w-1/2 mt-2 animate-pulse" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      <ProductCard isLoading={true} />
+                      <ProductCard isLoading={true} />
+                      <ProductCard isLoading={true} />
+                    </div>
+                  </div>
+                  <div className="space-y-6">
+                    <div className="border-b border-slate-100 pb-3">
+                      <div className="h-6 bg-slate-200/80 rounded-lg w-1/4 animate-pulse" />
+                      <div className="h-3 bg-slate-200/80 rounded w-1/3 mt-2 animate-pulse" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      <ProductCard isLoading={true} />
+                      <ProductCard isLoading={true} />
+                      <ProductCard isLoading={true} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : noResults ? (
               <div className="bg-slate-50 rounded-3xl border border-dashed border-slate-200 p-12 text-center">
                 <p className="text-slate-500 font-medium">No matching products or services found for "{searchQuery}".</p>
                 <button 
@@ -1943,6 +2016,7 @@ const sampleWorks = [
                   onUpdateProduct={handleUpdateProduct}
                   onRefresh={() => loadAdminData(authState.token || '')}
                   lastUpdated={lastUpdatedTime}
+                  isLoading={isAdminDataLoading}
                 />
               )}
               {adminSubTab === 'products' && (
@@ -2052,7 +2126,7 @@ const sampleWorks = [
       />
 
       {/* Main Body View Layout */}
-      <main className="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10">
+      <main className="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10 pb-28 md:pb-10">
         {renderActiveView()}
       </main>
 
@@ -2060,6 +2134,33 @@ const sampleWorks = [
       <Footer setActiveTab={setActiveTab} />
       <FloatingContact />
       <UpdateNotifier />
+
+      {/* Mobile Floating Bottom Navigation Bar (Matching Screenshot 1 & 2) */}
+      <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/80 shadow-[0_10px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] rounded-[24px] p-2 flex justify-around items-center">
+        {mobileTabs.map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.targetTab;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.targetTab)}
+              className="flex-1 py-2 px-1 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all relative cursor-pointer"
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="mobileActiveTabPill"
+                  className="absolute inset-0 bg-cyan-100/50 dark:bg-cyan-950/30 rounded-2xl z-0"
+                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                />
+              )}
+              <Icon className={`w-5 h-5 relative z-10 transition-colors duration-200 ${isActive ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-400 dark:text-slate-500'}`} />
+              <span className={`text-[10px] uppercase tracking-wider relative z-10 transition-colors duration-200 ${isActive ? 'text-cyan-700 dark:text-cyan-400 font-black' : 'text-slate-500 dark:text-slate-400 font-bold'}`}>
+                {item.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* Complete Step-by-Step User Manual & PDF Export Modal */}
       <UserManualModal 

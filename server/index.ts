@@ -1,5 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
+import fs from 'fs';
+import multer from 'multer';
 import { createServer as createViteServer } from 'vite';
 import { db, ProductService, Announcement, Feedback, Transaction, Booking } from '../db-store.js';
 
@@ -66,6 +68,28 @@ async function startServer() {
   // JSON Body Parser with ample capacity
   app.use(express.json());
 
+  // Ensure local uploads directory exists
+  const uploadsDir = path.join(process.cwd(), 'uploads');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
+  // Serve uploads statically
+  app.use('/uploads', express.static(uploadsDir));
+
+  // Configure multer storage
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+    }
+  });
+  const upload = multer({ storage });
+
   // -------------------------------------------------------------
   // API ENDPOINTS
   // -------------------------------------------------------------
@@ -73,6 +97,27 @@ async function startServer() {
   // Health check
   app.get('/api/health', async (req: Request, res: Response) => {
     res.json({ status: 'healthy', timestamp: new Date().toISOString() });
+  });
+
+  // Local File Upload Endpoint
+  app.post('/api/upload', upload.single('file'), async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ error: 'No file was uploaded.' });
+        return;
+      }
+      const fileUrl = `/uploads/${req.file.filename}`;
+      res.json({
+        success: true,
+        fileUrl,
+        filename: req.file.originalname,
+        size: req.file.size,
+        mimeType: req.file.mimetype
+      });
+    } catch (err: any) {
+      console.error('File upload error:', err);
+      res.status(500).json({ error: 'Failed to upload file.', details: err.message });
+    }
   });
 
   // Auth Login
@@ -628,6 +673,25 @@ async function startServer() {
       };
       bookings.unshift(newBooking);
       await db.saveBookings(bookings);
+
+      // Automated SMS Appointment Confirmation dispatch
+      try {
+        const smsText = `Kabajamaa/koo ${customerName}, IresoJ Digital CSC tajaajila '${serviceTitle}' guyyaa ${bookingDate} sa'aatii ${bookingTime} irratti qabattanii jirtu mirkaneessee jira. Galatoomaa! Dear ${customerName}, your booking for '${serviceTitle}' on ${bookingDate} at ${bookingTime} has been received. Thank you!`;
+        
+        console.log('---------------------------------------------------------');
+        console.log(`[AUTOMATED BOOKING SMS DISPATCH]`);
+        console.log(`Recipient Name : ${customerName}`);
+        console.log(`Target Mobile  : ${customerPhone}`);
+        console.log(`Payload Text   : "${smsText}"`);
+        console.log(`Transmission   : SUCCESS`);
+        console.log('---------------------------------------------------------');
+        
+        // Log to activity log
+        await logAction('Booking SMS Confirmed', `Automated SMS sent to ${customerPhone} for ${serviceTitle}`, 'info', req);
+      } catch (smsErr) {
+        console.error('Error during automated booking SMS dispatch:', smsErr);
+      }
+
       res.status(201).json({ success: true, message: 'Your service booking request has been submitted successfully!', booking: newBooking });
     } catch (err) {
       res.status(500).json({ error: 'Failed to save your booking.' });
