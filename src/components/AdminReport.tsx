@@ -247,7 +247,7 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
       <!DOCTYPE html>
       <html>
         <head>
-          <title>ES Digital CSC - Monthly Insights & Analytics Executive Summary</title>
+          <title>IresoJ Digital CSC - Monthly Insights & Analytics Executive Summary</title>
           <style>
             body { font-family: system-ui, -apple-system, sans-serif; color: #0f172a; margin: 35px; line-height: 1.5; background: #ffffff; }
             .header { border-bottom: 4px solid #0284c7; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-start; }
@@ -273,7 +273,7 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
           
           <div class="header">
             <div>
-              <div class="subtitle">ES Digital Computer Service Center • Executive Intelligence</div>
+              <div class="subtitle">IresoJ Digital CSC Computer Services • Executive Intelligence</div>
               <div class="title">Monthly Revenue Growth & KPI Insights</div>
               <div style="font-size: 12px; color: #475569; margin-top: 4px;">Location: Kore Town Center, West Arsi, Ethiopia</div>
             </div>
@@ -330,7 +330,7 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
           </table>
 
           <div class="footer">
-            <span>ES Digital Computer Service Center • Kore Town, Oromia, Ethiopia • Manager: Jemal Ireso</span>
+            <span>IresoJ Digital CSC Computer Services • Kore Town, Oromia, Ethiopia • Manager: Jemal Ireso</span>
             <span>Page 1 of 1 • Confidential Compliance Document</span>
           </div>
         </body>
@@ -351,7 +351,7 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
 
       const fullDatabaseState = {
         meta: {
-          organization: 'ES Digital Computer Service Center',
+          organization: 'IresoJ Digital CSC Computer Services',
           location: 'Kore Town Center, West Arsi, Ethiopia',
           manager: 'Jemal Ireso',
           databaseProjectID: 'ai-studio-esdigitalcompute-07ac3921-f36f-42e6-8cb0-60744c958ec6',
@@ -498,7 +498,7 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
         <!DOCTYPE html>
         <html>
           <head>
-            <title>ES Digital - ${monthName} ${currentYear} Monthly Report</title>
+            <title>IresoJ Digital CSC - ${monthName} ${currentYear} Monthly Report</title>
             <style>
               body { font-family: system-ui, -apple-system, sans-serif; color: #0f172a; margin: 30px; line-height: 1.5; }
               .header { border-bottom: 3px solid #0284c7; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -524,7 +524,7 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
             </div>
             <div class="header">
               <div>
-                <div class="subtitle">ES Digital Computer Services — Official Monthly Archive</div>
+                <div class="subtitle">IresoJ Digital CSC Computer Services — Official Monthly Archive</div>
                 <div class="title">Monthly Financial & Service Report (${monthName} ${currentYear})</div>
               </div>
               <div style="text-align: right; font-size: 11px; color: #64748b;">
@@ -587,7 +587,7 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
             </table>
 
             <div class="footer">
-              <div>ES Digital Computer Services • Official Physical Archive Copy</div>
+              <div>IresoJ Digital CSC Computer Services • Official Physical Archive Copy</div>
               <div>Authorized Signature: _______________________</div>
             </div>
 
@@ -639,7 +639,7 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
       <!DOCTYPE html>
       <html>
         <head>
-          <title>ES Digital - Executive Sales & Booking Audit Report</title>
+          <title>IresoJ Digital CSC - Executive Sales & Booking Audit Report</title>
           <style>
             body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #0f172a; margin: 30px; line-height: 1.5; }
             .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #0284c7; padding-bottom: 15px; margin-bottom: 25px; }
@@ -746,7 +746,7 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
           <div class="footer-sign">
             <div class="sign-box">
               Prepared By: Admin Jemal Fano<br/>
-              ES Digital Computer Services Manager
+              IresoJ Digital CSC Computer Services Manager
             </div>
             <div class="sign-box">
               Official Physical Stamp & Verification<br/>
@@ -770,28 +770,41 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
   const reportData = useMemo(() => {
     const approvedTx = transactions.filter(tx => tx.status === 'approved');
     
-    // Revenue by Day (Last 7 days)
-    const dailyRevenue: Record<string, number> = {};
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
-    }).reverse();
+    // Daily Revenue Breakdown (Last 10 days for Bar Chart with Peak Highlighting)
+    const dailyMap: Record<string, { dateStr: string; name: string; revenue: number; txCount: number }> = {};
+    const daysCount = 10;
+    const today = new Date();
 
-    last7Days.forEach(date => {
-      dailyRevenue[date] = 0;
-    });
+    for (let i = daysCount - 1; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const name = d.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' });
+      dailyMap[dateStr] = { dateStr, name, revenue: 0, txCount: 0 };
+    }
 
     approvedTx.forEach(tx => {
-      const date = tx.date.split('T')[0];
-      if (dailyRevenue[date] !== undefined) {
-        dailyRevenue[date] += tx.amount;
+      if (!tx.date) return;
+      const dateStr = tx.date.split('T')[0];
+      if (dailyMap[dateStr]) {
+        dailyMap[dateStr].revenue += tx.amount;
+        dailyMap[dateStr].txCount += 1;
       }
     });
 
-    const dailyRevenueData = last7Days.map(date => ({
-      name: new Date(date).toLocaleDateString(undefined, { weekday: 'short' }),
-      revenue: dailyRevenue[date]
+    const dailyRevenueList = Object.values(dailyMap);
+    let maxDailyRevenue = 0;
+    let peakDayName = 'N/A';
+    dailyRevenueList.forEach(d => {
+      if (d.revenue >= maxDailyRevenue && d.revenue > 0) {
+        maxDailyRevenue = d.revenue;
+        peakDayName = d.name;
+      }
+    });
+
+    const dailyRevenueData = dailyRevenueList.map(item => ({
+      ...item,
+      isPeak: maxDailyRevenue > 0 && item.revenue === maxDailyRevenue,
+      isHighVolume: maxDailyRevenue > 0 && item.revenue >= maxDailyRevenue * 0.7 && item.revenue < maxDailyRevenue
     }));
 
     // Monthly Revenue Growth Trend (Recharts Line Chart)
@@ -867,6 +880,8 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
 
     return {
       dailyRevenueData,
+      maxDailyRevenue,
+      peakDayName,
       monthlyRevenueData,
       maxMonthlyRevenue,
       peakMonthLabel,
@@ -966,7 +981,7 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
               <span>Admin Automated Backup to: <strong className="text-sky-300 font-mono">jemalfan030@gmail.com</strong></span>
             </h3>
             <p className="text-xs text-slate-300 max-w-2xl">
-              Configured automated background cron backup for ES Digital Computer Services database (Users, Orders, Transactions, Bookings & Digital Assets). Automatically compiled and emailed every week to administrator address.
+              Configured automated background cron backup for IresoJ Digital CSC Computer Services database (Users, Orders, Transactions, Bookings & Digital Assets). Automatically compiled and emailed every week to administrator address.
             </p>
           </div>
 
@@ -1170,56 +1185,86 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Revenue Trend Chart */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
+        {/* Daily Revenue Bar Chart with Peak Highlighting */}
+        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
-              <h4 className="font-display font-bold text-slate-900">Weekly Revenue Trend</h4>
-              <p className="text-xs text-slate-500">Revenue growth over the last 7 days</p>
+              <div className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider mb-1 border border-amber-200/60">
+                <TrendingUp className="w-3.5 h-3.5 text-amber-500" />
+                <span>Daily Sales Peak Analytics</span>
+              </div>
+              <h4 className="font-display font-bold text-slate-900 text-lg">
+                Daily Revenue Bar Chart
+              </h4>
+              <p className="text-xs text-slate-500">
+                Daily revenue metrics with automatic sales peak highlight detection
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+              <div className="bg-amber-50 border border-amber-200 text-amber-900 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5 shadow-2xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <span>Peak Day: {reportData.peakDayName} ({formatETB(reportData.maxDailyRevenue)})</span>
+              </div>
             </div>
           </div>
-          <div className="h-[300px] w-full">
+
+          {/* Color Legend Tags */}
+          <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-md bg-amber-500"></span>
+              <span>Sales Peak (Highest)</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-md bg-emerald-500"></span>
+              <span>High Volume (&gt;70%)</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-md bg-sky-500"></span>
+              <span>Standard Daily Revenue</span>
+            </span>
+          </div>
+
+          <div className="h-[280px] w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={reportData.dailyRevenueData}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
+              <BarChart data={reportData.dailyRevenueData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis 
                   dataKey="name" 
                   axisLine={false} 
                   tickLine={false} 
-                  tick={{ fontSize: 10, fill: '#64748b', fontWeight: 500 }} 
-                  dy={10}
+                  tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} 
+                  dy={8}
                 />
                 <YAxis 
                   axisLine={false} 
                   tickLine={false} 
                   tick={{ fontSize: 10, fill: '#64748b', fontWeight: 500 }}
-                  tickFormatter={(val) => `\u0024{val}`}
+                  tickFormatter={(val) => `${val >= 1000 ? (val/1000).toFixed(0) + 'k' : val}`}
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    borderRadius: '12px', 
-                    border: 'none', 
+                    borderRadius: '14px', 
+                    border: '1px solid #e2e8f0', 
                     boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)',
-                    fontSize: '12px',
-                    fontWeight: '600'
+                    padding: '10px 14px',
+                    backgroundColor: '#ffffff'
                   }}
-                  formatter={(value: number) => [formatETB(value), 'Revenue']}
+                  formatter={(value: number, _name: string, item: any) => [
+                    `${formatETB(value)} ${item.payload.isPeak ? '🔥 (PEAK SALES)' : ''}`, 
+                    'Daily Revenue'
+                  ]}
+                  labelStyle={{ fontWeight: '800', color: '#0f172a', marginBottom: '2px', fontSize: '12px' }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#0EA5E9" 
-                  strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorRevenue)" 
-                />
-              </AreaChart>
+                <Bar dataKey="revenue" radius={[6, 6, 0, 0]} maxBarSize={45}>
+                  {reportData.dailyRevenueData.map((entry, index) => (
+                    <Cell 
+                      key={`daily-bar-${index}`} 
+                      fill={entry.isPeak ? '#F59E0B' : entry.isHighVolume ? '#10B981' : '#0EA5E9'} 
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>

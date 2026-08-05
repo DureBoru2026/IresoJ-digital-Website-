@@ -216,11 +216,11 @@ export default function AdminBookings({ bookings, onRefresh, onUpdateStatus, onD
     const capStatus = booking.status.toUpperCase();
 
     if (lang === 'en') {
-      setEmailSubject(`ES Digital CSC - Appointment ${booking.status === 'pending' ? 'Received' : booking.status}`);
+      setEmailSubject(`IresoJ Digital CSC - Appointment ${booking.status === 'pending' ? 'Received' : booking.status}`);
       setEmailBody(
 `Hello ${booking.customerName},
 
-Thank you for selecting ES Digital Computing Service Center.
+Thank you for selecting IresoJ Digital CSC Computer Services.
 
 Here is the update regarding your appointment:
 --------------------------------------------------
@@ -233,22 +233,22 @@ Payment Status : ${capPayment}
 
 ${booking.status === 'pending' ? 'Our technical representatives in Kore Town are currently reviewing your diagnostics request and will contact you shortly.' : ''}
 ${booking.status === 'confirmed' ? 'Your booking slot has been officially confirmed! Please arrive at our facility 5 minutes before your scheduled time.' : ''}
-${booking.status === 'completed' ? 'Your service task has been fully resolved and archived! Thank you for choosing ES Digital. We appreciate your partnership.' : ''}
+${booking.status === 'completed' ? 'Your service task has been fully resolved and archived! Thank you for choosing IresoJ Digital CSC. We appreciate your partnership.' : ''}
 ${booking.status === 'cancelled' ? 'Your booking request has been cancelled. If you believe this was an error, please reply or call us directly.' : ''}
 
 If you have any questions or would like to submit documents, please reply directly to this email or call us at +251 911 234 567.
 
 Best Regards,
 Jemal Ireso (General Manager)
-ES Digital CSC Kore Town, West Arsi, Ethiopia`
+IresoJ Digital CSC Kore Town, West Arsi, Ethiopia`
       );
     } else {
       // Oromo language
-      setEmailSubject(`ES Digital CSC - Beeksisa Qubannoo Tajaajilaa (${booking.status === 'pending' ? 'Hofcolame' : booking.status})`);
+      setEmailSubject(`IresoJ Digital CSC - Beeksisa Qubannoo Tajaajilaa (${booking.status === 'pending' ? 'Hofcolame' : booking.status})`);
       setEmailBody(
 `Kabajamoo ${booking.customerName},
 
-ES Digital Computing Service Center filachuun keessaniif baay'ee galatoomaa.
+IresoJ Digital CSC Computer Services filachuun keessaniif baay'ee galatoomaa.
 
 Oduu haaraa beellama keessan ilaalchisee:
 --------------------------------------------------
@@ -263,7 +263,7 @@ Beellama keessan ilaalchisee odeeffannoo dabalataa argachuuf ykn bilbilaan quunn
 
 Galaatoomaa,
 Jemal Ireso (Hoggonaa Giddugalaa)
-ES Digital CSC Kore Town, West Arsi, Ethiopia`
+IresoJ Digital CSC Kore Town, West Arsi, Ethiopia`
       );
     }
   };
@@ -485,7 +485,7 @@ ES Digital CSC Kore Town, West Arsi, Ethiopia`
       // Footer
       doc.setFontSize(7.5);
       doc.setTextColor(148, 163, 184); // slate-400
-      doc.text(`Official Document exported via ES Digital CSC administrative console.`, 20, finalY + 8);
+      doc.text(`Official Document exported via IresoJ Digital CSC administrative console.`, 20, finalY + 8);
       doc.text(`Generation Timestamp: ${new Date().toLocaleString()} (Local Time)`, 20, finalY + 13);
       doc.text(`Kore Town Road, West Arsi, Oromia, Ethiopia.`, 20, finalY + 18);
 
@@ -493,7 +493,7 @@ ES Digital CSC Kore Town, West Arsi, Ethiopia`
       doc.setTextColor(30, 41, 59);
       doc.setFontSize(9);
       doc.setFont('Helvetica', 'bold');
-      doc.text('ES Digital Registrar Stamp', 135, finalY + 8);
+      doc.text('IresoJ Digital Registrar Stamp', 135, finalY + 8);
       doc.setDrawColor(203, 213, 225);
       doc.line(130, finalY + 24, 185, finalY + 24);
       doc.setFontSize(8);

@@ -113,7 +113,7 @@ export default function AdminSecurityLogs({ token }: AdminSecurityLogsProps) {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Security Audit Logs Compliance Report - ES Digital</title>
+          <title>Security Audit Logs Compliance Report - IresoJ Digital CSC</title>
           <style>
             body { font-family: system-ui, -apple-system, sans-serif; color: #0f172a; margin: 30px; line-height: 1.5; }
             .header { border-bottom: 3px solid #312e81; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -140,7 +140,7 @@ export default function AdminSecurityLogs({ token }: AdminSecurityLogsProps) {
           
           <div class="header">
             <div>
-              <div class="subtitle">ES Digital Computer Services — Security & Access Compliance</div>
+              <div class="subtitle">IresoJ Digital CSC Computer Services — Security & Access Compliance</div>
               <div class="title">Administrative Security Audit Log Report</div>
             </div>
             <div style="text-align: right; font-size: 11px; color: #64748b;">
@@ -190,7 +190,7 @@ export default function AdminSecurityLogs({ token }: AdminSecurityLogsProps) {
           </table>
 
           <div class="footer">
-            <div>ES Digital Computer Services • Security & Compliance Audit Log Archive</div>
+            <div>IresoJ Digital CSC Computer Services • Security & Compliance Audit Log Archive</div>
             <div>Auditor / IT Security Officer Signature: _______________________</div>
           </div>
 

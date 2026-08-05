@@ -315,7 +315,7 @@ export default function ServiceCostEstimator({ onBookingSubmitted }: ServiceCost
               <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-700">Appointment Scheduled</span>
               <h3 className="text-2xl font-black text-slate-900 font-display">Service Ticket #{bookingSuccess.id || 'CONFIRMED'}</h3>
               <p className="text-xs text-slate-600 max-w-md mx-auto">
-                Thank you <strong>{bookingSuccess.customerName}</strong>! Your service slot is reserved at ES Digital Center in Kore Town.
+                Thank you <strong>{bookingSuccess.customerName}</strong>! Your service slot is reserved at IresoJ Digital CSC Center in Kore Town.
               </p>
             </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Mail, MessageCircle, Calendar, Send, Trash2, ShieldCheck, Check, AlertCircle, RefreshCw, Archive, Star, Eye, EyeOff, Smartphone, PhoneCall, Sparkles, Users, X, AlertTriangle } from 'lucide-react';
+import { Mail, MessageCircle, Calendar, Send, Trash2, ShieldCheck, Check, AlertCircle, RefreshCw, Archive, Star, Eye, EyeOff, Smartphone, PhoneCall, Sparkles, Users, X, AlertTriangle, Copy } from 'lucide-react';
 import { Announcement, Feedback, CustomerRecord, Transaction, Booking, SmsBroadcast } from '../types';
 
 interface AdminShareProps {
@@ -221,13 +221,13 @@ export default function AdminShare({
 
   const getSocialShareLinks = (title: string, content: string) => {
     const origin = window.location.origin || 'https://esdigital-computer.app';
-    const advertText = `📢 [ES Digital News & Announcement]\n\n*${title}*\n\n${content}\n\n📱 ES Digital Computer Services (Kore Town Center, West Arsi)\n• Laptop & Desktop Repair & Diagnostics\n• Document Printing & Graphical Layouts\n• Short IT & Computer Training Courses\n• Handcrafted Genuine Leather Goods\n\nVisit & track your service online: ${origin}`;
+    const advertText = `📢 [IresoJ Digital Tech & Social Media Broadcast]\n\n*${title}*\n\n${content}\n\n🌐 Social Media Promotion & Tech News Broadcast Center (YouTube, TikTok, Facebook, Telegram)\n• Digital Marketing Campaigns & Brand Promotions\n• Tech News Articles & Media Content Creation\n• Graphic Layouts, Image & Video Production\n• Short IT & Digital Literacy Courses\n\nVisit & track your service online: ${origin}`;
     
     return {
       whatsapp: `https://api.whatsapp.com/send?text=${encodeURIComponent(advertText)}`,
       telegram: `https://t.me/share/url?url=${encodeURIComponent(origin)}&text=${encodeURIComponent(`📢 ${title}\n\n${content}\n\nVisit app: ${origin}`)}`,
       facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(origin)}&quote=${encodeURIComponent(advertText)}`,
-      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(`📢 ${title} - ES Digital Services\n${origin}`)}`,
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(`📢 ${title} - IresoJ Digital CSC\n${origin}`)}`,
       rawText: advertText
     };
   };
@@ -820,21 +820,21 @@ export default function AdminShare({
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
-                      onClick={() => setSmsMessage("ES Digital Special Promo: Get 20% discount on all laptop maintenance & printing services this week! Visit us at ES Digital Center or call 0911554433.")}
+                      onClick={() => setSmsMessage("IresoJ Digital Special Promo: Get 20% discount on all laptop maintenance & printing services this week! Visit us at IresoJ Digital Center or call 0911554433.")}
                       className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg text-[11px] font-semibold transition-colors border border-slate-700 cursor-pointer"
                     >
                       🎁 20% Off Maintenance
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSmsMessage("New Stock Arrival at ES Digital: High quality genuine leather wallets & tech accessories now in stock. Order online today!")}
+                      onClick={() => setSmsMessage("New Stock Arrival at IresoJ Digital: High quality genuine leather wallets & tech accessories now in stock. Order online today!")}
                       className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg text-[11px] font-semibold transition-colors border border-slate-700 cursor-pointer"
                     >
                       💼 New Goods In Stock
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSmsMessage("Computer Training Open: Register for MS Office, Graphic Design & Web Development at ES Digital Computer Center. Limited seats!")}
+                      onClick={() => setSmsMessage("Computer Training Open: Register for MS Office, Graphic Design & Web Development at IresoJ Digital CSC. Limited seats!")}
                       className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg text-[11px] font-semibold transition-colors border border-slate-700 cursor-pointer"
                     >
                       🎓 Training Enrollment

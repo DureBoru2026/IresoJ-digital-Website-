@@ -47,6 +47,40 @@ export default function DigitalStore({ assets, onDownload, onInitiatePurchase }:
   const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [sortArrival, setSortArrival] = useState<'newest' | 'popular'>('newest');
 
+  // Recent Searches state
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('iresoj_recent_searches_catalog');
+      return saved ? JSON.parse(saved) : ['YouTube Broadcast', 'Basic Computer Skills', 'TikTok Promotion', 'Graphic Design', 'Agriculture Guide'];
+    } catch {
+      return ['YouTube Broadcast', 'Basic Computer Skills', 'TikTok Promotion', 'Graphic Design', 'Agriculture Guide'];
+    }
+  });
+
+  const handleApplySearch = (term: string) => {
+    setSearchTerm(term);
+    if (!term.trim()) return;
+    setRecentSearches(prev => {
+      const filtered = prev.filter(s => s.toLowerCase() !== term.trim().toLowerCase());
+      const updated = [term.trim(), ...filtered].slice(0, 6);
+      try {
+        localStorage.setItem('iresoj_recent_searches_catalog', JSON.stringify(updated));
+      } catch (err) {
+        console.error('Error saving recent searches:', err);
+      }
+      return updated;
+    });
+  };
+
+  const handleClearRecentSearches = () => {
+    setRecentSearches([]);
+    try {
+      localStorage.removeItem('iresoj_recent_searches_catalog');
+    } catch (err) {
+      console.error('Error clearing recent searches:', err);
+    }
+  };
+
   const toggleWishlist = (id: string) => {
     setWishlistIds(prev => 
       prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
@@ -146,14 +180,68 @@ export default function DigitalStore({ assets, onDownload, onInitiatePurchase }:
     <div className="space-y-8 animate-in fade-in duration-500 max-w-7xl mx-auto px-2 sm:px-4">
       {/* Top Header Card matching Screenshot 3 */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-sm space-y-6">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 font-display tracking-tight">
-            Marketplace
-          </h1>
-          <p className="text-slate-500 font-medium text-sm mt-1">
-            Premium assets for the modern creator.
-          </p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-black text-slate-900 font-display tracking-tight">
+              Marketplace &amp; Services Catalog
+            </h1>
+            <p className="text-slate-500 font-medium text-sm mt-1">
+              Search digital assets, courses, social media promos &amp; computer services.
+            </p>
+          </div>
+
+          {/* Interactive Search Bar */}
+          <div className="w-full md:w-80 relative">
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search catalog or services..."
+                value={searchTerm}
+                onChange={(e) => handleApplySearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-sky-500 focus:bg-white transition-all shadow-2xs"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-bold"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
         </div>
+
+        {/* Recent Searches Pills Section */}
+        {recentSearches.length > 0 && (
+          <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-2">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mr-1">
+              <Sparkles className="w-3 h-3 text-amber-500" />
+              Recent Searches:
+            </span>
+            {recentSearches.map((term, idx) => (
+              <button
+                key={idx}
+                onClick={() => handleApplySearch(term)}
+                className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 border ${
+                  searchTerm.toLowerCase() === term.toLowerCase()
+                    ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                    : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200/80 hover:border-slate-300'
+                }`}
+              >
+                <span>{term}</span>
+              </button>
+            ))}
+            <button
+              onClick={handleClearRecentSearches}
+              className="text-[10px] text-slate-400 hover:text-rose-500 font-bold underline ml-auto transition-colors cursor-pointer"
+              title="Clear search history"
+            >
+              Clear History
+            </button>
+          </div>
+        )}
 
         {/* Toolbar Row matching Screenshot 3 */}
         <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
@@ -493,7 +581,7 @@ export default function DigitalStore({ assets, onDownload, onInitiatePurchase }:
                   </h3>
 
                   <p className="text-xs text-slate-500 line-clamp-3 leading-relaxed">
-                    {asset.description || 'Professional digital asset created by ES Digital & Dure Boru experts.'}
+                    {asset.description || 'Professional digital asset created by IresoJ Digital CSC & Dure Boru experts.'}
                   </p>
                 </div>
 

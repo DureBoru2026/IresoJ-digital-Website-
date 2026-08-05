@@ -43,7 +43,7 @@ interface AffiliateProduct {
 const INITIAL_AFFILIATE_PRODUCTS: AffiliateProduct[] = [
   {
     id: 'aff_1',
-    creatorName: 'ES Digital Team',
+    creatorName: 'IresoJ Digital Team',
     productTitle: 'Full-Stack React & Express Website Login Architecture',
     category: 'Website Login',
     originalUrl: 'https://github.com/es-digital/website-login-auth',
@@ -202,7 +202,7 @@ export default function HomeDashboardShowcase() {
               Interactive System Overview
             </span>
             <h2 className="text-3xl font-black text-slate-900 font-display">
-              Welcome to <span className="text-sky-600">ES Digital Computer Services</span>
+              Welcome to <span className="text-sky-600">IresoJ Digital CSC</span>
             </h2>
             <p className="text-xs text-slate-500 leading-relaxed font-medium">
               Explore our real-time interactive dashboard introducing our core digital ecosystem, live service queue monitors, web development project structures, and educational academy resources.
@@ -410,7 +410,7 @@ export default function HomeDashboardShowcase() {
                 </span>
               </div>
               <h4 className="text-base font-black text-slate-900">
-                ES Digital UI Component & Booklet Layout Pack
+                IresoJ Digital CSC UI Component & Booklet Layout Pack
               </h4>
               <p className="text-xs text-slate-500 leading-relaxed">
                 Ready-to-edit Figma and Tailwind CSS templates for corporate booklets, promotional flyers, ID badges, and web app dashboards.
@@ -589,7 +589,7 @@ export default function HomeDashboardShowcase() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Jemal Fano / ES Digital"
+                    placeholder="e.g. Jemal Fano / IresoJ Digital CSC"
                     value={newCreator}
                     onChange={(e) => setNewCreator(e.target.value)}
                     className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:border-amber-500"

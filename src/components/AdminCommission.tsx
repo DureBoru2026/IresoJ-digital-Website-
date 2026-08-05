@@ -58,7 +58,7 @@ export default function AdminCommission({ transactions = [] }: AdminCommissionPr
         id: 'sw_1',
         title: 'Full-Stack React & Express Website Login Architecture',
         category: 'Website Login Prep',
-        creatorName: 'ES Digital Tech Team',
+        creatorName: 'IresoJ Digital Tech Team',
         salesVolume: 0,
         commissionRate: 0.02,
         commissionEarned: 0,

@@ -1,7 +1,7 @@
 
 export const PAYMENT_CONFIG = {
   telebirr: {
-    accountName: "Jemal Fano Haji (ES Digital CSC)",
+    accountName: "Jemal Fano Haji (IresoJ Digital CSC)",
     accountNumber: "0911234567", // Replace with your actual Telebirr number
     merchantId: "MS_123456", // Optional: Replace with your Merchant ID if applicable
     instructions: {
@@ -24,14 +24,14 @@ export const PAYMENT_CONFIG = {
     }
   },
   cbeBirr: {
-    accountName: "Jemal Fano Haji (ES Digital CSC)",
+    accountName: "Jemal Fano Haji (IresoJ Digital CSC)",
     accountNumber: "1000123456789", // Replace with your actual CBE account number
     instructions: {
       en: [
         "Dial *847# or use CBE Birr App",
         "Choose 'Transfer Money' or 'Pay Merchant'",
         "Enter our CBE Birr Account Number",
-        "Verify the account name: ES Digital CSC",
+        "Verify the account name: IresoJ Digital CSC",
         "Enter the amount and your PIN",
         "Keep the SMS confirmation for reference"
       ],
@@ -39,7 +39,7 @@ export const PAYMENT_CONFIG = {
         "Bilbila keessaniin *847# irratti bilbilaa ykn Appii CBE Birr fayyadamaa",
         "Filannoo 'Maallaqa Ergi' ykn 'Kaffaltii' filadhaa",
         "Lakkoofsa Herrega CBE Birr keenya galchaa",
-        "Maqaa herreggaa mirkaneessaa: ES Digital CSC",
+        "Maqaa herreggaa mirkaneessaa: IresoJ Digital CSC",
         "Hanga kaffaltii fi lakkoofsa iccitii (PIN) keessan galchaa",
         "SMS mirkaneessaa sana ragaaf qabadhaa"
       ]

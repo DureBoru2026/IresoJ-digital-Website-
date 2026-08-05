@@ -35,60 +35,60 @@ interface TrackResult {
 }
 
 const SAMPLE_TRACKING_CODES = [
-  { code: 'BK-1001', label: 'Laptop Screen Replacement' },
-  { code: 'BK-1002', label: 'OS & Driver Optimization' },
-  { code: '0995852194', label: 'Phone Number Lookup' }
+  { code: 'BK-1001', label: 'TikTok & YouTube Media Promo' },
+  { code: 'BK-1002', label: 'Tech News Article & Video Post' },
+  { code: '0995852194', label: 'Phone Contact Lookup' }
 ];
 
 const MOCK_FALLBACK_REPAIRS: Record<string, TrackResult> = {
   'BK-1001': {
     id: 'BK-1001',
     status: 'confirmed',
-    serviceTitle: 'Laptop Display Panel & Hinge Repair',
+    serviceTitle: 'YouTube & TikTok Digital Social Media Promotion',
     bookingDate: '2026-07-20',
     customerName: 'Abebe Bikila',
     phone: '+251 911 223 344',
     paymentStatus: 'paid',
     paymentGateway: 'telebirr',
-    technicianName: 'Eng. Jemal Ireso (Head Repair Specialist)',
+    technicianName: 'Eng. Jemal Ireso (Digital Media Lead)',
     estimatedCompletion: 'Today at 5:30 PM',
     repairLogs: [
-      { date: 'July 20, 10:00 AM', message: 'Device received & checked-in at Kore Town workbench.', stage: 1 },
-      { date: 'July 20, 02:15 PM', message: 'Diagnostics completed. Display panel replacement initiated.', stage: 2 },
-      { date: 'July 21, 09:30 AM', message: 'New FHD IPS Screen mounted & display testing underway.', stage: 3 }
+      { date: 'July 20, 10:00 AM', message: 'Campaign briefing & media assets received.', stage: 1 },
+      { date: 'July 20, 02:15 PM', message: 'Video thumbnail, caption & high-resolution graphic design completed.', stage: 2 },
+      { date: 'July 21, 09:30 AM', message: 'Published on YouTube, TikTok & Facebook channels with live audience targeting.', stage: 3 }
     ]
   },
   'BK-1002': {
     id: 'BK-1002',
     status: 'completed',
-    serviceTitle: 'System Optimization & Driver Diagnostics',
+    serviceTitle: 'Technology News Broadcast & Article Release',
     bookingDate: '2026-07-19',
     customerName: 'Sara Mohammed',
     phone: '+251 922 334 455',
     paymentStatus: 'paid',
     paymentGateway: 'cbe_birr',
-    technicianName: 'ES Digital Tech Team',
+    technicianName: 'IresoJ Digital News Desk',
     estimatedCompletion: 'Completed',
     repairLogs: [
-      { date: 'July 19, 09:00 AM', message: 'Laptop checked-in for slow boot & driver issues.', stage: 1 },
-      { date: 'July 19, 11:30 AM', message: 'Thermal paste refreshed & SSD firmware patched.', stage: 3 },
-      { date: 'July 19, 04:00 PM', message: 'Final stress test passed. Ready for pickup at Kore CSC.', stage: 5 }
+      { date: 'July 19, 09:00 AM', message: 'Tech news article drafted with image & video attachments.', stage: 1 },
+      { date: 'July 19, 11:30 AM', message: 'Editorial verification & multi-platform social sync finished.', stage: 3 },
+      { date: 'July 19, 04:00 PM', message: 'Live broadcast active across YouTube & Telegram newsfeed.', stage: 5 }
     ]
   },
   '0995852194': {
     id: 'BK-8890',
     status: 'confirmed',
-    serviceTitle: 'Motherboard Diagnostic Check & Dust Cleaning',
+    serviceTitle: 'Facebook & Telegram Brand Announcement Post',
     bookingDate: '2026-07-21',
     customerName: 'Jemal Ireso',
     phone: '+251 995 852 194',
     paymentStatus: 'unpaid',
     paymentGateway: 'cash',
-    technicianName: 'ES Digital Repair Desk',
+    technicianName: 'IresoJ Social Media Desk',
     estimatedCompletion: 'Tomorrow, 11:00 AM',
     repairLogs: [
-      { date: 'July 21, 01:00 PM', message: 'Device registered under customer phone contact +251 995 852 194.', stage: 1 },
-      { date: 'July 21, 02:00 PM', message: 'Power circuit line testing in progress.', stage: 2 }
+      { date: 'July 21, 01:00 PM', message: 'Order registered under customer phone contact +251 995 852 194.', stage: 1 },
+      { date: 'July 21, 02:00 PM', message: 'Graphic banner layout & promotional text copywriting in progress.', stage: 2 }
     ]
   }
 };
@@ -284,46 +284,72 @@ export default function ServiceTracker({ isAdmin, onBookingStatusUpdate }: Servi
   };
 
   return (
-    <div className="bg-white rounded-[2.5rem] p-6 md:p-10 shadow-2xl shadow-slate-200/60 border border-slate-100 max-w-4xl mx-auto space-y-8">
+    <div className="bg-white rounded-2xl sm:rounded-[2.5rem] p-4 sm:p-6 md:p-10 shadow-xl sm:shadow-2xl shadow-slate-200/60 border border-slate-100 max-w-4xl mx-auto space-y-4 sm:space-y-8">
       {/* Header Banner */}
-      <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-100 shadow-2xs">
-          <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-          <span>Real-time Service Tracker</span>
+      <div className="text-center space-y-2 sm:space-y-3">
+        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 bg-amber-50 text-amber-800 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-widest border border-amber-200/80 shadow-2xs">
+          <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500" />
+          <span>Real-time Service &amp; Media Broadcast Tracker</span>
         </div>
-        <h2 className="text-3xl sm:text-4xl font-display font-black text-slate-900 tracking-tight">
-          Track Your Repair
+        <h2 className="text-2xl sm:text-4xl font-display font-black text-slate-900 tracking-tight">
+          Track Your Service Order
         </h2>
-        <p className="text-slate-500 text-xs sm:text-sm max-w-lg mx-auto leading-relaxed">
-          Enter your Booking Reference ID (e.g., <span className="font-mono text-indigo-600 font-bold">BK-1001</span>) or Phone Number to view live workbench diagnostic notes and pickup readiness.
+        <p className="text-slate-500 text-xs sm:text-sm max-w-lg mx-auto leading-normal sm:leading-relaxed">
+          Enter your Booking Reference ID (e.g., <span className="font-mono text-sky-600 font-bold">BK-1001</span>) or Phone Number to view live production stages, social media broadcast status, and pickup readiness.
         </p>
+
+        {/* Color Legend Badges for Mobile & Desktop */}
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[10px] font-bold">
+          <span className="px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            Social Campaign / Media Post
+          </span>
+          <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            Tech News Broadcast
+          </span>
+          <span className="px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-500"></span>
+            Printing &amp; Custom Layouts
+          </span>
+        </div>
       </div>
 
-      {/* Input Search Form */}
-      <form onSubmit={handleTrack} className="relative max-w-xl mx-auto">
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-slate-400">
-          <Hash className="w-4 h-4 text-indigo-500" />
+      {/* Input Search Form - Compact Mobile Grid/Flex */}
+      <form onSubmit={handleTrack} className="flex flex-col sm:relative max-w-xl mx-auto gap-2 sm:gap-0">
+        <div className="relative w-full">
+          <div className="absolute left-3.5 sm:left-4 top-1/2 -translate-y-1/2 flex items-center gap-2 text-slate-400">
+            <Hash className="w-4 h-4 text-indigo-500" />
+          </div>
+          <input
+            type="text"
+            placeholder="e.g. BK-1001 or 0995852194"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="w-full pl-10 sm:pl-12 pr-4 sm:pr-32 py-2.5 sm:py-4 bg-slate-50 border border-slate-200 rounded-xl sm:rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-900 text-xs sm:text-sm placeholder:text-slate-400 placeholder:font-normal"
+          />
+          <button
+            type="submit"
+            disabled={loading || !query.trim()}
+            className="hidden sm:flex absolute right-2 top-2 bottom-2 px-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs transition-all shadow-lg shadow-indigo-200 items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            <span>{loading ? 'Tracking...' : 'Search'}</span>
+          </button>
         </div>
-        <input
-          type="text"
-          placeholder="e.g. BK-1001 or 0995852194"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full pl-12 pr-32 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-bold text-slate-900 text-sm placeholder:text-slate-400 placeholder:font-normal"
-        />
         <button
           type="submit"
           disabled={loading || !query.trim()}
-          className="absolute right-2 top-2 bottom-2 px-6 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+          className="flex sm:hidden w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs transition-all shadow-md shadow-indigo-200 items-center justify-center gap-2 disabled:opacity-50 cursor-pointer active:scale-95"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-          <span>{loading ? 'Tracking...' : 'Search'}</span>
+          <span>{loading ? 'Tracking...' : 'Search Repair Progress'}</span>
         </button>
       </form>
 
       {/* Quick Test Sample Chips */}
-      <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-xs">
-        <span className="text-slate-400 text-[11px] font-bold uppercase tracking-wider font-mono">
+      <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 text-[11px] sm:text-xs">
+        <span className="text-slate-400 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider font-mono">
           Try sample code:
         </span>
         {SAMPLE_TRACKING_CODES.map((item) => (
@@ -331,10 +357,10 @@ export default function ServiceTracker({ isAdmin, onBookingStatusUpdate }: Servi
             key={item.code}
             type="button"
             onClick={() => handleSampleClick(item.code)}
-            className="px-3 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 font-mono text-xs font-bold rounded-lg border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer flex items-center gap-1.5"
+            className="px-2.5 sm:px-3 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-700 font-mono text-[11px] sm:text-xs font-bold rounded-lg border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer flex items-center gap-1"
           >
             <span>{item.code}</span>
-            <span className="text-[10px] text-slate-400 font-sans font-normal">({item.label})</span>
+            <span className="text-[9px] sm:text-[10px] text-slate-400 font-sans font-normal">({item.label})</span>
           </button>
         ))}
       </div>
@@ -524,7 +550,7 @@ export default function ServiceTracker({ isAdmin, onBookingStatusUpdate }: Servi
                   <div className="text-xs text-slate-300 space-y-2 font-mono">
                     <p className="flex items-center gap-2">
                       <User className="w-4 h-4 text-indigo-400 shrink-0" />
-                      <span>{result.technicianName || 'ES Digital Master Tech'}</span>
+                      <span>{result.technicianName || 'IresoJ Digital Master Tech'}</span>
                     </p>
                     <p className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-amber-400 shrink-0" />

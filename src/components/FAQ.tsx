@@ -103,8 +103,8 @@ export default function FAQ() {
         om: "Akkamitti isin qunnamuu ykn odeeffannoo haaraa hordofuu danda'a?" 
       },
       answer: { 
-        en: "You can call us directly at +251 995 852 194, message us on Telegram, or follow our official Facebook page 'ES Digital CSC' for the latest service updates and price lists.", 
-        om: "Bilbila lakkoofsa +251 995 852 194 irratti bilbilaan, Telegiraamiidhaan ergaa nuuf erguun ykn fuula Feesbuukii 'ES Digital CSC' hordofuun odeeffannoo tajaajilaa fi gatii haaraa argachuu dandeessu." 
+        en: "You can call us directly at +251 995 852 194, message us on Telegram, or follow our official Facebook page 'IresoJ Digital CSC' for the latest service updates and price lists.", 
+        om: "Bilbila lakkoofsa +251 995 852 194 irratti bilbilaan, Telegiraamiidhaan ergaa nuuf erguun ykn fuula Feesbuukii 'IresoJ Digital CSC' hordofuun odeeffannoo tajaajilaa fi gatii haaraa argachuu dandeessu." 
       },
       icon: Facebook
     }
@@ -154,7 +154,7 @@ export default function FAQ() {
             </div>
             <div className="text-left">
               <span className="block text-[10px] font-bold text-[#1877F2] uppercase tracking-wider">Follow Us</span>
-              <span className="font-display font-extrabold text-slate-800 text-sm">ES Digital CSC</span>
+              <span className="font-display font-extrabold text-slate-800 text-sm">IresoJ Digital CSC</span>
             </div>
           </div>
           <ArrowRight className="w-4 h-4 text-[#1877F2] opacity-0 group-hover:opacity-100 transition-opacity" />

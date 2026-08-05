@@ -293,7 +293,7 @@ export default function AdminPayroll() {
 
           <div class="header">
             <div>
-              <div class="subtitle">ES Digital Computer Services — Payroll Department</div>
+              <div class="subtitle">IresoJ Digital CSC Computer Services — Payroll Department</div>
               <div class="title">Staff Salary Advice & Payslip</div>
             </div>
             <div style="text-align: right; font-size: 11px;">
@@ -350,12 +350,149 @@ export default function AdminPayroll() {
           </div>
 
           <div class="footer">
-            <div>ES Digital Computer Services • Confidential Payroll Copy</div>
+            <div>IresoJ Digital CSC Computer Services • Confidential Payroll Copy</div>
             <div>Authorized Finance Manager Signature: _______________________</div>
           </div>
 
           <script>
             window.onload = function() { setTimeout(function() { window.print(); }, 400); }
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  // Export Full Formatted Monthly Salary & Bonus PDF Report
+  const handleDownloadFullPayrollPDF = () => {
+    const printWindow = window.open('', '_blank', 'width=950,height=1000');
+    if (!printWindow) {
+      alert('Please allow popups to open and print the monthly staff payroll PDF report.');
+      return;
+    }
+
+    const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const periodLabel = selectedMonth === 'All' ? 'All Recorded Periods' : selectedMonth;
+
+    const rowsHtml = filteredList.map(item => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-family: monospace; font-size: 11px; font-weight: 700;">${item.id}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+          <strong style="color: #0f172a; display: block; font-size: 12px;">${item.staffName}</strong>
+          <span style="color: #64748b; font-size: 10px;">${item.role}</span>
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-weight: 700; color: #334155;">${item.month}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-family: monospace; font-weight: 700; color: #0284c7;">${formatETB(item.baseSalary)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-family: monospace; font-weight: 800; color: #10b981;">+${formatETB(item.bonus)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-family: monospace; color: #ef4444;">-${formatETB(item.taxDeduction)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; font-family: monospace; font-weight: 900; color: #0f172a; font-size: 13px; background-color: #f8fafc;">${formatETB(item.netPay)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">
+          <span style="display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; background: ${item.paymentStatus === 'paid' ? '#dcfce7' : item.paymentStatus === 'processing' ? '#fef3c7' : '#fee2e2'}; color: ${item.paymentStatus === 'paid' ? '#15803d' : item.paymentStatus === 'processing' ? '#b45309' : '#b91c1c'};">
+            ${item.paymentStatus}
+          </span>
+          <div style="font-size: 10px; color: #64748b; margin-top: 2px;">${item.paymentMethod}</div>
+        </td>
+      </tr>
+    `).join('');
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Monthly Staff Salary & Bonus Payroll Report - IresoJ Digital CSC</title>
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; color: #0f172a; margin: 30px; line-height: 1.5; background: #ffffff; }
+            .header { border-bottom: 4px solid #0284c7; padding-bottom: 16px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: flex-start; }
+            .title { font-size: 22px; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; }
+            .subtitle { font-size: 11px; color: #0284c7; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+            .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 25px; }
+            .kpi-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; }
+            .kpi-label { font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 800; }
+            .kpi-val { font-size: 18px; font-weight: 900; color: #0f172a; margin-top: 2px; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 11px; }
+            th { background: #0f172a; color: #ffffff; text-align: left; padding: 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+            .notes-box { background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 10px; padding: 12px; font-size: 11px; color: #0369a1; margin-bottom: 25px; }
+            .footer { border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 40px; font-size: 10px; color: #64748b; display: flex; justify-content: space-between; align-items: center; }
+            .sign-space { border-top: 2px solid #94a3b8; width: 220px; text-align: center; padding-top: 6px; font-weight: 700; color: #334155; }
+            @media print { .no-print { display: none !important; } body { margin: 15px; } }
+          </style>
+        </head>
+        <body>
+          <div class="no-print" style="margin-bottom: 20px; text-align: right;">
+            <button onclick="window.print()" style="padding: 10px 20px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; shadow: 0 4px 6px rgba(0,0,0,0.1);">🖨️ Print / Download Payroll PDF</button>
+          </div>
+
+          <div class="header">
+            <div>
+              <div class="subtitle">IresoJ Digital CSC Computer Services • Human Capital Management</div>
+              <div class="title">Monthly Staff Salary & Bonus Payroll Audit Report</div>
+              <div style="font-size: 11px; color: #475569; margin-top: 4px;">Kore Town Center, West Arsi, Oromia, Ethiopia</div>
+            </div>
+            <div style="text-align: right; font-size: 11px; color: #64748b;">
+              <strong>Report Generated:</strong> ${reportDate}<br>
+              <strong>Selected Period:</strong> ${periodLabel}<br>
+              <strong>Staff Records:</strong> ${filteredList.length} Employees
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-label">Total Net Salary Disbursed</div>
+              <div class="kpi-val" style="color: #0284c7;">${formatETB(totalNetPay)}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Total Base Salaries</div>
+              <div class="kpi-val">${formatETB(totalBaseSalary)}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Total Performance Bonuses</div>
+              <div class="kpi-val" style="color: #10b981;">${formatETB(totalBonuses)}</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Statutory Tax & Pension</div>
+              <div class="kpi-val" style="color: #ef4444;">${formatETB(totalTaxes)}</div>
+            </div>
+          </div>
+
+          <div class="notes-box">
+            <strong>📋 Payroll Audit Summary Notes:</strong><br>
+            This official document outlines the monthly salary payments, performance incentive bonuses, statutory tax withholdings, and net payable disbursements for IresoJ Digital CSC staff. Verified under local labor compliance guidelines.
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Ref ID</th>
+                <th>Staff Name & Position</th>
+                <th>Period</th>
+                <th>Base Salary</th>
+                <th>Bonus Data</th>
+                <th>Tax / Deduct.</th>
+                <th>Net Payable</th>
+                <th>Status & Method</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml || '<tr><td colspan="8" style="padding: 15px; text-align: center; color: #94a3b8;">No staff payroll records match selected filter.</td></tr>'}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <div>
+              <strong>IresoJ Digital CSC Computer Services</strong><br>
+              Human Resources & Financial Accounting Desk • Kore Town<br>
+              Confidential Payroll Audit Copy
+            </div>
+            <div class="sign-space">
+              Authorized Finance Director Signature<br>
+              <span style="font-size: 9px; font-weight: normal; color: #64748b;">Date: ________________________</span>
+            </div>
+          </div>
+
+          <script>
+            window.onload = function() {
+              setTimeout(function() { window.print(); }, 400);
+            };
           </script>
         </body>
       </html>
@@ -411,6 +548,15 @@ export default function AdminPayroll() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={handleDownloadFullPayrollPDF}
+            className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-2xl flex items-center gap-2 transition-all shadow-md shadow-indigo-100 cursor-pointer active:scale-95"
+            title="Download Formatted Monthly Salary & Bonus PDF Report"
+          >
+            <Printer className="w-4 h-4 text-amber-300" />
+            <span>Download PDF</span>
+          </button>
+
           <button
             onClick={handleExportCSV}
             className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-2xl flex items-center gap-2 transition-all cursor-pointer"

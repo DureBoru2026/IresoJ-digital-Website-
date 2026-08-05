@@ -147,7 +147,7 @@ export default function AdminHistory({ transactions, onRefresh }: AdminHistoryPr
     setSmsModalTx(tx);
     setSmsPhone(tx.customerPhone || '+251 995 852 194');
     setSmsMessage(
-      `Dear ${tx.customerName}, your payment receipt (Ref: ${tx.referenceNumber}) for ${formatETB(tx.amount)} via ${tx.paymentGateway} is recorded at ES Digital Services. Verification Code: QR-${tx.referenceNumber.slice(-6)}. Thank you!`
+      `Dear ${tx.customerName}, your payment receipt (Ref: ${tx.referenceNumber}) for ${formatETB(tx.amount)} via ${tx.paymentGateway} is recorded at IresoJ Digital CSC. Verification Code: QR-${tx.referenceNumber.slice(-6)}. Thank you!`
     );
   };
 
@@ -206,7 +206,7 @@ export default function AdminHistory({ transactions, onRefresh }: AdminHistoryPr
 
           <div class="header">
             <div>
-              <div class="subtitle">ES Digital Computer Services • Kore Town, Addis Ababa</div>
+              <div class="subtitle">IresoJ Digital CSC Computer Services • Kore Town, West Arsi</div>
               <div class="title">Transaction Audit & Payment Worksheet</div>
             </div>
             <div style="text-align: right;">
@@ -266,7 +266,7 @@ export default function AdminHistory({ transactions, onRefresh }: AdminHistoryPr
           </div>
 
           <div class="footer">
-            <div>ES Digital Computer Services • Authorized Financial Ledger</div>
+            <div>IresoJ Digital CSC Computer Services • Authorized Financial Ledger</div>
             <div>Auditor Signature: _______________________</div>
           </div>
 
@@ -302,7 +302,7 @@ export default function AdminHistory({ transactions, onRefresh }: AdminHistoryPr
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Master Transaction Ledger Worksheet - ES Digital</title>
+          <title>Master Transaction Ledger Worksheet - IresoJ Digital CSC</title>
           <style>
             body { font-family: system-ui, -apple-system, sans-serif; color: #0f172a; margin: 30px; line-height: 1.5; }
             .header { border-bottom: 3px solid #0EA5E9; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -318,7 +318,7 @@ export default function AdminHistory({ transactions, onRefresh }: AdminHistoryPr
           </div>
           <div class="header">
             <div>
-              <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase;">ES Digital Computer Services</div>
+              <div style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase;">IresoJ Digital CSC Computer Services</div>
               <div class="title">Master Transaction Ledger Worksheet (${processedTransactions.length} Records)</div>
             </div>
             <div style="text-align: right; font-size: 11px; color: #64748b;">

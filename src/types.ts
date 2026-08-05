@@ -81,6 +81,8 @@ export interface DigitalAsset {
   id: string;
   title: string;
   type: 'video' | 'image' | 'template' | 'pdf' | 'ppt' | 'word';
+  category?: string;
+  tags?: string[];
   priceType: 'free' | 'sale';
   price: number; // 0 if free
   fileUrl: string;

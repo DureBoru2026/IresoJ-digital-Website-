@@ -54,16 +54,16 @@ export default function BookServiceModal({ onClose, products, lang, onSubmitBook
       customSvcPlaceholder: 'e.g. Printer roller replacement, custom booklet design',
       notesPlaceholder: 'Specify any brand/model names, error messages, or custom specifications you have...',
       services: {
-        maint_general: '💻 Computer & Laptop Diagnostic/Repair',
-        print_general: '🖨️ Graphic Design & Publishing Layout',
-        train_general: '🎓 Short IT & Basic Computer Training Course',
-        phone_repair: '📱 Smartphone Diagnostics & Maintenance',
-        custom_other: '✨ Custom Walker Request / Other Service'
+        maint_general: '🚀 Social Media Promotion & Tech News Broadcast (YouTube, TikTok, Facebook)',
+        print_general: '🖨️ Graphic Design, Content Posts & Layout Publishing',
+        train_general: '🎓 Tech Insights, Video Editing & Digital Literacy Training',
+        phone_repair: '📲 Tech News Article & Multi-Platform Post Publishing',
+        custom_other: '✨ Custom Social Media Campaign & Tech Broadcast'
       }
     },
     om: {
       title: 'Tajaajila Galmeessisi (Book)',
-      subtitle: 'Suphaa kompiitaraa ogummaa qabu, dizaayinii maxxansaa, ykn leenjii IT qindeessi',
+      subtitle: 'Beeksisa Miidiyaa Hawaasaa (YouTube, TikTok, Facebook), Oduu Teeknoolojii fi Dizaayinii Qindeessi',
       customerName: 'Maqaa Guutuu Keessan *',
       customerPhone: 'Lakkoofsa Bilbilaa *',
       customerEmail: 'Teessoo Imeeylii (Filannoo)',
@@ -78,14 +78,14 @@ export default function BookServiceModal({ onClose, products, lang, onSubmitBook
       successDesc: 'Galmeen keessan kuusaa ragaa (database) keenya keessatti olkaa\'ameera. Ogeessi keenya Magaalaa Qoree dhiyeenyatti isin quunnama.',
       closeBtn: 'Cufi',
       validationErr: 'Maaloo iddoowwan dirqama ta\'an hunda guutaa.',
-      customSvcPlaceholder: 'Fakkeenya: Suphaa Printer, dizaayinii beeksisaa',
-      notesPlaceholder: 'Maaloo gosa kompiitaraa, rakkina isaa, ykn qulqullina barbaaddan ibsaa...',
+      customSvcPlaceholder: 'Fakkeenya: Beeksisa TikTok/YouTube, Dizaayinii Oduu Teeknoolojii',
+      notesPlaceholder: 'Maaloo ergaa beeksisaa, fakkii/viidiyo, ykn qulqullina barbaaddan ibsaa...',
       services: {
-        maint_general: '💻 Suphaa fi Qorannoo Kompiitaraa/Laptop',
-        print_general: '🖨️ Dizaayinii Grafiksii fi Maxxansaa',
-        train_general: '🎓 Barnoota Saffisaa IT fi Bu\'uura Kompiitaraa',
-        phone_repair: '📱 Qorannoo fi Suphaa Moobaayilaa',
-        custom_other: '✨ Gaaffii Addaa / Tajaajila Biraa'
+        maint_general: '🚀 Beeksisa Miidiyaa Hawaasaa (YouTube, TikTok, Facebook)',
+        print_general: '🖨️ Dizaayinii Grafiksii fi Maxxansaa Poostii',
+        train_general: '🎓 Oduu Teeknoolojii, Viidiyoo Gulantaa fi Barnoota IT',
+        phone_repair: '📲 Tamsaasa Oduu fi Odeeffannoo Teeknoolojii',
+        custom_other: '✨ Beeksisa Addaa / Tajaajila Miidiyaa Biraa'
       }
     }
   };

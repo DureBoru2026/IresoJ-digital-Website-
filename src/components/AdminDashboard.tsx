@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   Activity, 
   Calendar, 
@@ -16,7 +16,9 @@ import {
   Megaphone,
   CalendarPlus,
   Zap,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw,
+  Download
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -30,23 +32,112 @@ import {
   Bar,
   Cell
 } from 'recharts';
-import { Booking, Transaction, Feedback } from '../types';
+import { Booking, Transaction, Feedback, ProductService } from '../types';
 import { formatETB } from '../utils';
 import RecentActivityFeed from './RecentActivityFeed';
 import AdminFailedLoginAlerts from './AdminFailedLoginAlerts';
+import InventoryLowWidget from './InventoryLowWidget';
+import RevenueAlertWidget from './RevenueAlertWidget';
 
 interface AdminDashboardProps {
   bookings: Booking[];
   transactions: Transaction[];
   feedback: Feedback[];
+  products?: ProductService[];
   onSetTab: (tab: any) => void;
+  onUpdateProduct?: (id: string, payload: Partial<ProductService>) => Promise<boolean>;
+  onRefresh?: () => Promise<void> | void;
+  lastUpdated?: string;
 }
 
 const CHART_COLORS = ['#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
-export default function AdminDashboard({ bookings, transactions, feedback, onSetTab }: AdminDashboardProps) {
+export default function AdminDashboard({ 
+  bookings, 
+  transactions, 
+  feedback, 
+  products = [], 
+  onSetTab, 
+  onUpdateProduct,
+  onRefresh,
+  lastUpdated
+}: AdminDashboardProps) {
   
   const today = new Date().toISOString().split('T')[0];
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [localLastUpdated, setLocalLastUpdated] = useState<string>(
+    lastUpdated || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  );
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      if (onRefresh) {
+        await onRefresh();
+      }
+      const updatedTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      setLocalLastUpdated(updatedTime);
+    } catch (err) {
+      console.error('Refresh error:', err);
+    } finally {
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
+  };
+
+  // Export Current Booking and Transaction Data as CSV
+  const handleExportCSV = () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    // Header line
+    const csvRows: string[] = [
+      'RECORD TYPE,REFERENCE ID,CUSTOMER NAME,CONTACT PHONE,ITEM / SERVICE / PURPOSE,AMOUNT (ETB),PAYMENT METHOD/GATEWAY,STATUS,DATE,TIME'
+    ];
+
+    // Bookings
+    (bookings || []).forEach(b => {
+      const row = [
+        'Booking',
+        `"${(b.id || '').replace(/"/g, '""')}"`,
+        `"${(b.customerName || '').replace(/"/g, '""')}"`,
+        `"${(b.customerPhone || '').replace(/"/g, '""')}"`,
+        `"${(b.serviceTitle || '').replace(/"/g, '""')}"`,
+        0,
+        `"${(b.paymentStatus || 'unpaid').replace(/"/g, '""')}"`,
+        `"${(b.status || 'pending').replace(/"/g, '""')}"`,
+        `"${(b.bookingDate || b.date || '').replace(/"/g, '""')}"`,
+        `"${(b.bookingTime || '').replace(/"/g, '""')}"`
+      ].join(',');
+      csvRows.push(row);
+    });
+
+    // Transactions
+    (transactions || []).forEach(t => {
+      const row = [
+        'Transaction',
+        `"${(t.referenceNumber || t.id || '').replace(/"/g, '""')}"`,
+        `"${(t.customerName || '').replace(/"/g, '""')}"`,
+        `"${(t.customerPhone || '').replace(/"/g, '""')}"`,
+        `"${(t.purpose || '').replace(/"/g, '""')}"`,
+        t.amount || 0,
+        `"${(t.paymentGateway || 'telebirr').replace(/"/g, '""')}"`,
+        `"${(t.status || 'pending').replace(/"/g, '""')}"`,
+        `"${(t.date || '').replace(/"/g, '""')}"`,
+        'N/A'
+      ].join(',');
+      csvRows.push(row);
+    });
+
+    const csvContent = '\uFEFF' + csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Command_Center_Audit_Records_${todayStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const stats = useMemo(() => {
     const todayBookings = bookings.filter(b => b.date === today);
@@ -148,12 +239,49 @@ export default function AdminDashboard({ bookings, transactions, feedback, onSet
       {/* Daily Summary Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 font-display">Command Center</h2>
-          <p className="text-sm text-slate-500">Real-time business intelligence dashboard</p>
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-2xl font-black text-slate-900 font-display">Command Center</h2>
+            <span className="text-[10px] font-mono font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Live Sync
+            </span>
+          </div>
+          <p className="text-sm text-slate-500">Real-time business intelligence dashboard &amp; store telemetry</p>
         </div>
-        <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-slate-100 shadow-sm">
-          <Clock className="w-4 h-4 text-slate-400" />
-          <span className="text-xs font-bold text-slate-700">{new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Last Updated Timestamp Visual Indicator */}
+          <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-slate-200/80 shadow-2xs text-xs font-mono">
+            <Clock className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-slate-400 font-semibold">Last Updated:</span>
+            <span className="font-bold text-slate-800">{lastUpdated || localLastUpdated}</span>
+          </div>
+
+          {/* Refresh Button */}
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-2 bg-sky-600 hover:bg-sky-500 active:scale-95 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md shadow-sky-200/60 transition-all cursor-pointer disabled:opacity-60"
+            title="Manually trigger re-fetch of all administrative data"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Fetching Data...' : 'Refresh Data'}</span>
+          </button>
+
+          {/* Export CSV Button */}
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md shadow-emerald-200/60 transition-all cursor-pointer"
+            title="Export current bookings and transaction audit records as CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-amber-300" />
+            <span>Export CSV</span>
+          </button>
+
+          {/* Date Badge */}
+          <div className="hidden sm:flex items-center gap-2 bg-slate-100 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700">
+            <span>{new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+          </div>
         </div>
       </div>
 
@@ -176,7 +304,7 @@ export default function AdminDashboard({ bookings, transactions, feedback, onSet
           </div>
           <div className="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700/60 text-[11px] text-slate-300">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span className="font-bold">ES Digital Staff Authenticated</span>
+            <span className="font-bold">IresoJ Digital Staff Authenticated</span>
           </div>
         </div>
 
@@ -284,6 +412,18 @@ export default function AdminDashboard({ bookings, transactions, feedback, onSet
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Inventory Low & Revenue Alert Widgets Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <InventoryLowWidget 
+          products={products} 
+          onSetTab={onSetTab} 
+          onUpdateProduct={onUpdateProduct} 
+        />
+        <RevenueAlertWidget 
+          todayRevenue={stats.todayRevenue} 
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

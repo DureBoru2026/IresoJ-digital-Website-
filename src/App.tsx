@@ -41,6 +41,7 @@ import SuccessStoriesCarousel from './components/SuccessStoriesCarousel';
 import FAQ from './components/FAQ';
 import HomeDashboardShowcase from './components/HomeDashboardShowcase';
 import ServiceCostEstimator from './components/ServiceCostEstimator';
+import UserManualModal from './components/UserManualModal';
 
 const sampleWorks = [
   { id: 1, url: 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?auto=format&fit=crop&q=80&w=800', title: 'Corporate ID Card' },
@@ -49,10 +50,31 @@ const sampleWorks = [
   { id: 4, url: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&q=80&w=800', title: 'Event Poster' }
 ];
 
-export default function App() {
+  export default function App() {
   const { lang, t } = useLanguage();
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [adminSubTab, setAdminSubTab] = useState<AdminSubTab>('dashboard');
+  const [showUserManual, setShowUserManual] = useState(false);
+
+  // Theme State
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('app_theme');
+    return (saved === 'dark' || saved === 'light') ? saved : 'light';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('app_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  };
   
   // Auth State
   const [authState, setAuthState] = useState<AuthState>({
@@ -69,6 +91,9 @@ export default function App() {
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [assets, setAssets] = useState<DigitalAsset[]>([]);
+  const [lastUpdatedTime, setLastUpdatedTime] = useState<string>(
+    () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  );
 
   // Sound Notification Ref
   const prevCountsRef = useRef({ bookings: 0, feedback: 0, transactions: 0 });
@@ -355,6 +380,7 @@ export default function App() {
           transactions: finalTransactions.length
         };
         isFirstLoadRef.current = false;
+        setLastUpdatedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
       } else if (response.status === 401) {
         console.warn('Admin session expired or invalid');
         setAuthState({ isAuthenticated: false, token: null, user: null });
@@ -566,7 +592,7 @@ export default function App() {
 
         // Trigger SMS notification trigger
         try {
-          const smsText = `Hello ${bookingData.customerName}, your booking for "${bookingData.serviceTitle}" on ${bookingData.bookingDate} @ ${bookingData.bookingTime} has been successfully received. We will contact you soon! ES Digital CSC Kore.`;
+          const smsText = `Hello ${bookingData.customerName}, your booking for "${bookingData.serviceTitle}" on ${bookingData.bookingDate} @ ${bookingData.bookingTime} has been successfully received. We will contact you soon! IresoJ Digital CSC Kore.`;
           
           await fetch('/api/send-sms', {
             method: 'POST',
@@ -950,36 +976,36 @@ export default function App() {
             <section id="categories-grid" className="space-y-8">
               <div className="text-center space-y-2">
                 <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-[#0EA5E9]">
-                  Four Pillars of Customer Service
+                  {t('fourPillarsTitle')}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-950 font-bold max-w-md mx-auto">
-                  Our service categories are tailored to address both corporate publishing demands, personal maintenance repairs, and tactile leather goods in Oromia.
+                  {t('fourPillarsSub')}
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
                   {
-                    title: 'Computer & Electronics Maintenance',
-                    desc: 'Expert diagnostic check, hardware parts repair, OS install, active dust removal, and comprehensive troubleshooting for personal or business rigs.',
+                    title: t('compMaintenance'),
+                    desc: t('compMaintenanceDesc'),
                     icon: Laptop,
                     color: 'text-[#0EA5E9] bg-sky-50 border-sky-100',
                   },
                   {
-                    title: 'Print & Publish layouts',
-                    desc: 'High-speed professional document replication, corporate pamphlets binding, and gorgeous graphical layout layouts crafted by digital artists.',
+                    title: t('printPublishLayouts'),
+                    desc: t('printPublishDesc'),
                     icon: BookOpen,
                     color: 'text-emerald-600 bg-emerald-50 border-emerald-100',
                   },
                   {
-                    title: 'Short Basic Training courses',
-                    desc: 'Practical, short-term hands-on training courses covering fundamentals of operating systems, Excel, Word, and secure online search.',
+                    title: t('shortBasicTraining'),
+                    desc: t('shortTrainingDesc'),
                     icon: HelpCircle,
                     color: 'text-indigo-600 bg-indigo-50 border-indigo-100',
                   },
                   {
-                    title: 'Store Sales Section',
-                    desc: 'Fully inspected electronics, mobile airtime cards, and our signature full-grain genuine leather wallets & cases local artisan crafted.',
+                    title: t('storeSalesSection'),
+                    desc: t('storeSalesDesc'),
                     icon: Sparkles,
                     color: 'text-amber-600 bg-amber-50 border-amber-100',
                   },
@@ -1000,7 +1026,7 @@ export default function App() {
                       onClick={() => setActiveTab('services')}
                       className="text-xs text-[#0EA5E9] font-bold hover:text-sky-600 flex items-center gap-1.5 mt-5 hover:translate-x-0.5 transition-transform text-left"
                     >
-                      <span>Explore products</span>
+                      <span>{t('exploreProducts')}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -1013,17 +1039,17 @@ export default function App() {
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3">
                 <div>
                   <h2 className="font-display text-2xl sm:text-3xl font-extrabold text-[#0EA5E9]">
-                    Featured Store Offers
+                    {t('featuredOffers')}
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-950 font-bold mt-1">
-                    Authentic hardware components, digital layouts, and premium leather accessories locally made.
+                    {t('featuredOffersSub')}
                   </p>
                 </div>
                 <button
                   onClick={() => setActiveTab('services')}
                   className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors shadow-sm shrink-0"
                 >
-                  View Catalog
+                  {t('viewCatalog')}
                 </button>
               </div>
 
@@ -1051,13 +1077,13 @@ export default function App() {
             <section id="location-trust" className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-3xl p-8 sm:p-10 border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-8">
               <div className="space-y-4 max-w-lg text-left">
                 <span className="text-[10px] uppercase font-mono font-bold tracking-widest text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-100">
-                  Physical Shop & Collection
+                  {t('heroLocation')}
                 </span>
                 <h3 className="font-display font-extrabold text-[#0EA5E9] text-xl sm:text-2xl">
-                  Visit us in Kore Town, West Arsi
+                  {t('visitUsTitle')}
                 </h3>
                 <p className="text-slate-950 font-bold text-xs sm:text-sm leading-relaxed">
-                  Want to feel the tactile weight of our full-grain Ethiopian leather laptop sleeves? Or drop off your device for a 1-hour screen replacement diagnostics? We are situated right in the heart of Kore Town. Enjoy local cash payments or CBE Birr / telebirr instant reconciliation.
+                  {t('visitUsDesc')}
                 </p>
                 <div className="flex flex-wrap gap-4 text-xs font-semibold text-slate-700">
                   <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-amber-500 shrink-0" /> Kore Woreda, Kore Town</span>
@@ -1070,8 +1096,8 @@ export default function App() {
                   <CheckCircle2 className="w-6 h-6 animate-pulse" />
                 </div>
                 <div>
-                  <span className="font-display font-bold text-slate-900 text-sm block">Instant Receipts</span>
-                  <span className="text-xs text-slate-950 font-bold leading-normal block">Submit telebirr or CBE Birr codes and get instant SMS confirmation logs!</span>
+                  <span className="font-display font-bold text-slate-900 text-sm block">{t('instantReceipts')}</span>
+                  <span className="text-xs text-slate-950 font-bold leading-normal block">{t('instantReceiptsDesc')}</span>
                 </div>
               </div>
             </section>
@@ -1087,10 +1113,10 @@ export default function App() {
             {/* Background Intro */}
             <section className="max-w-3xl mx-auto space-y-6 text-center py-6">
               <h1 className="font-display text-3xl sm:text-4xl font-extrabold text-slate-900">
-                About ES Digital Computer Service Center (ES Digital CSC)
+                About IresoJ Digital CSC Computer Services
               </h1>
               <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-                Established with the goal of bringing high-fidelity computer repairs, administrative digital design publishing, and fundamental technical literacy training closer to the West Arsi community, ES Digital CSC stands as Kore Town’s leading computer service station.
+                Established with the goal of bringing high-fidelity computer repairs, administrative digital design publishing, and fundamental technical literacy training closer to the West Arsi community, IresoJ Digital CSC stands as Kore Town’s leading computer service station.
               </p>
             </section>
 
@@ -1142,13 +1168,13 @@ export default function App() {
                   Caring for Premium Full-Grain Genuine Leather
                 </h2>
                 <p className="text-slate-500 text-xs">
-                  Educating our patrons on the preservation of locally hand-crafted leather goods sold at ES Digital CSC.
+                  Educating our patrons on the preservation of locally hand-crafted leather goods sold at IresoJ Digital CSC.
                 </p>
               </div>
 
               <div className="text-xs text-slate-700 leading-relaxed space-y-4">
                 <p>
-                  At ES Digital CSC, we believe in combining digital precision with raw organic craftsmanship. Alongside computer components, we sell high-quality, full-grain genuine Ethiopian leather wallets and laptop sleeves. Because full-grain leather is made from the topmost premium layer of the hide, it keeps all the natural strength, grains, and tactile textures.
+                  At IresoJ Digital CSC, we believe in combining digital precision with raw organic craftsmanship. Alongside computer components, we sell high-quality, full-grain genuine Ethiopian leather wallets and laptop sleeves. Because full-grain leather is made from the topmost premium layer of the hide, it keeps all the natural strength, grains, and tactile textures.
                 </p>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-4 font-mono">
@@ -1194,7 +1220,7 @@ export default function App() {
                 News & Official Announcements
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
-                Stay updated with corporate logs, stock replenishment notifications, and special academic IT course schedules from ES Digital CSC management.
+                Stay updated with corporate logs, stock replenishment notifications, and special academic IT course schedules from IresoJ Digital CSC management.
               </p>
             </div>
 
@@ -1226,7 +1252,7 @@ export default function App() {
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Share:</span>
                         <a
-                          href={`https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodeURIComponent(`📢 [ES Digital CSC] ${ann.title}\n\n${ann.content}\n\nVisit: ${window.location.origin}`)}`}
+                          href={`https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${encodeURIComponent(`📢 [IresoJ Digital CSC] ${ann.title}\n\n${ann.content}\n\nVisit: ${window.location.origin}`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-2 py-0.5 bg-sky-50 text-[#229ED9] hover:bg-sky-100 rounded text-[10px] font-bold transition-colors"
@@ -1234,7 +1260,7 @@ export default function App() {
                           Telegram
                         </a>
                         <a
-                          href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`📢 [ES Digital CSC] *${ann.title}*\n\n${ann.content}\n\nVisit: ${window.location.origin}`)}`}
+                          href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`📢 [IresoJ Digital CSC] *${ann.title}*\n\n${ann.content}\n\nVisit: ${window.location.origin}`)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="px-2 py-0.5 bg-emerald-50 text-[#25D366] hover:bg-emerald-100 rounded text-[10px] font-bold transition-colors"
@@ -1290,7 +1316,7 @@ export default function App() {
                   Need a custom diagnostics check or bespoke layout?
                 </h2>
                 <p className="text-sky-50 text-xs max-w-lg leading-relaxed font-medium">
-                  Skip the line! Schedule an appointment with ES Digital CSC experts in Kore Town. Select your date, describe the issue, and secure your slot today.
+                  Skip the line! Schedule an appointment with IresoJ Digital CSC experts in Kore Town. Select your date, describe the issue, and secure your slot today.
                 </p>
               </div>
               <button
@@ -1545,10 +1571,10 @@ export default function App() {
       // 5. CONTACT US VIEW (With feedback validation saving to db)
       case 'contact':
         return (
-          <div id="contact-view" className="max-w-5xl mx-auto space-y-12 animate-in fade-in duration-300">
+          <div id="contact-view" className="max-w-5xl mx-auto space-y-6 sm:space-y-12 animate-in fade-in duration-300">
             
-            <div className="text-center space-y-2">
-              <h1 className="font-display text-3xl font-extrabold text-slate-900">
+            <div className="text-center space-y-1.5 sm:space-y-2">
+              <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900">
                 Contact Us & Leave Feedback
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
@@ -1556,32 +1582,32 @@ export default function App() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 sm:gap-8">
               
               {/* Form panel - 3/5 cols */}
-              <div className="md:col-span-3 bg-white border border-slate-100 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6 text-left">
-                <h3 className="font-display font-bold text-slate-800 text-sm uppercase tracking-wider">
+              <div className="md:col-span-3 bg-white border border-slate-100 rounded-2xl p-4 sm:p-8 shadow-sm space-y-3 sm:space-y-6 text-left">
+                <h3 className="font-display font-bold text-slate-800 text-xs sm:text-sm uppercase tracking-wider">
                   Feedback Submission Form
                 </h3>
 
                 {contactSuccess && (
-                  <div className="bg-green-50 text-green-800 p-4 rounded-xl border border-green-200 flex items-center space-x-2 text-xs font-semibold">
-                    <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
+                  <div className="bg-green-50 text-green-800 p-3 sm:p-4 rounded-xl border border-green-200 flex items-center space-x-2 text-xs font-semibold">
+                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 shrink-0" />
                     <span>{contactSuccess}</span>
                   </div>
                 )}
 
                 {contactError && (
-                  <div className="bg-red-50 text-red-800 p-4 rounded-xl border border-red-200 flex items-center space-x-2 text-xs font-semibold">
-                    <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                  <div className="bg-red-50 text-red-800 p-3 sm:p-4 rounded-xl border border-red-200 flex items-center space-x-2 text-xs font-semibold">
+                    <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 shrink-0" />
                     <span>{contactError}</span>
                   </div>
                 )}
 
-                <form onSubmit={handleContactSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <form onSubmit={handleContactSubmit} className="space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 sm:mb-1">
                         Your Full Name *
                       </label>
                       <input
@@ -1590,11 +1616,11 @@ export default function App() {
                         placeholder="e.g. Jemal Ireso"
                         value={contactName}
                         onChange={(e) => setContactName(e.target.value)}
-                        className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0EA5E9] bg-slate-50"
+                        className="w-full text-xs px-3 sm:px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0EA5E9] bg-slate-50"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 sm:mb-1">
                         Phone Number
                       </label>
                       <input
@@ -1602,13 +1628,13 @@ export default function App() {
                         placeholder="e.g. +251 995 852 194"
                         value={contactPhone}
                         onChange={(e) => setContactPhone(e.target.value)}
-                        className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0EA5E9] bg-slate-50"
+                        className="w-full text-xs px-3 sm:px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0EA5E9] bg-slate-50"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 sm:mb-1">
                       Email Address *
                     </label>
                     <input
@@ -1617,15 +1643,15 @@ export default function App() {
                       placeholder="e.g. iresojemal44@gmail.com"
                       value={contactEmail}
                       onChange={(e) => setContactEmail(e.target.value)}
-                      className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0EA5E9] bg-slate-50"
+                      className="w-full text-xs px-3 sm:px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0EA5E9] bg-slate-50"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 sm:mb-2">
                       Experience Rating
                     </label>
-                    <div className="flex items-center gap-2 mb-4">
+                    <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-4">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
                           key={star}
@@ -1634,37 +1660,37 @@ export default function App() {
                           className="focus:outline-none transition-transform active:scale-110"
                         >
                           <Star 
-                            className={`w-6 h-6 ${star <= contactRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} 
+                            className={`w-5 h-5 sm:w-6 sm:h-6 ${star <= contactRating ? 'fill-amber-400 text-amber-400' : 'text-slate-300'}`} 
                           />
                         </button>
                       ))}
-                      <span className="ml-2 text-xs font-bold text-slate-400">
+                      <span className="ml-1.5 sm:ml-2 text-xs font-bold text-slate-400">
                         {contactRating} / 5
                       </span>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 sm:mb-1">
                       Detailed Message Inquiry *
                     </label>
                     <textarea
                       required
-                      rows={5}
+                      rows={3}
                       placeholder="Write your feedback, inquiry, or question for management..."
                       value={contactMessage}
                       onChange={(e) => setContactMessage(e.target.value)}
-                      className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0EA5E9] bg-slate-50"
+                      className="w-full text-xs px-3 sm:px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0EA5E9] bg-slate-50"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-[#0EA5E9] hover:bg-sky-600 text-white py-3 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-lg shadow-sky-100 active:scale-[0.98] disabled:opacity-50"
+                    className="w-full bg-[#0EA5E9] hover:bg-sky-600 text-white py-2.5 sm:py-3 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-md shadow-sky-100 active:scale-[0.98] disabled:opacity-50"
                   >
                     <Send className="w-4 h-4" />
-                    <span>{loading ? 'Submitting Form...' : 'Send Message To ES Digital'}</span>
+                    <span>{loading ? 'Submitting Form...' : 'Send Message To IresoJ Digital'}</span>
                   </button>
 
                 </form>
@@ -1679,14 +1705,14 @@ export default function App() {
                     <MessageCircle className="w-6 h-6 text-emerald-200" />
                     <div>
                       <h4 className="font-extrabold text-white text-sm font-display">Instant WhatsApp Inquiry</h4>
-                      <p className="text-[11px] text-emerald-100">Direct chat with ES Digital tech support team</p>
+                      <p className="text-[11px] text-emerald-100">Direct chat with IresoJ Digital tech support team</p>
                     </div>
                   </div>
                   <p className="text-xs text-emerald-50 leading-relaxed font-medium">
                     Have a quick question about repair fees or digital publishing? Click below to start a pre-filled chat on WhatsApp.
                   </p>
                   <a
-                    href="https://wa.me/251995852194?text=Hello%20ES%20Digital%20Service%20Center!%20I%20would%20like%20to%20inquire%20about%20your%20computer%20repair%20and%20digital%20printing%20services%20in%20Kore%20Town."
+                    href="https://wa.me/251995852194?text=Hello%20IresoJ%20Digital%20CSC!%20I%20would%20like%20to%20inquire%20about%20your%20computer%20repair%20and%20digital%20printing%20services%20in%20Kore%20Town."
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center gap-2 w-full py-3 bg-white text-emerald-800 hover:bg-emerald-50 font-black text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
@@ -1732,7 +1758,7 @@ export default function App() {
                   <div className="h-32 bg-slate-100 rounded-xl flex flex-col items-center justify-center border border-slate-200 relative overflow-hidden">
                     <div className="absolute inset-0 bg-slate-200/50 opacity-40 bg-[radial-gradient(#0ea5e9_1px,transparent_1px)] [background-size:16px_16px]" />
                     <MapPin className="w-7 h-7 text-red-600 animate-bounce relative z-10" />
-                    <span className="font-bold text-slate-800 mt-1 relative z-10">ES Digital CSC Location Map</span>
+                    <span className="font-bold text-slate-800 mt-1 relative z-10">IresoJ Digital CSC Location Map</span>
                     <span className="text-[10px] text-slate-400 relative z-10">Kore Town, Ethiopia</span>
                   </div>
                   <p className="leading-snug">
@@ -1912,7 +1938,11 @@ export default function App() {
                   bookings={bookings}
                   transactions={transactions}
                   feedback={feedback}
+                  products={products}
                   onSetTab={(tab) => setAdminSubTab(tab)}
+                  onUpdateProduct={handleUpdateProduct}
+                  onRefresh={() => loadAdminData(authState.token || '')}
+                  lastUpdated={lastUpdatedTime}
                 />
               )}
               {adminSubTab === 'products' && (
@@ -2016,6 +2046,9 @@ export default function App() {
         setActiveTab={setActiveTab} 
         authState={authState} 
         handleLogout={handleLogout} 
+        theme={theme}
+        toggleTheme={toggleTheme}
+        onOpenManual={() => setShowUserManual(true)}
       />
 
       {/* Main Body View Layout */}
@@ -2027,6 +2060,13 @@ export default function App() {
       <Footer setActiveTab={setActiveTab} />
       <FloatingContact />
       <UpdateNotifier />
+
+      {/* Complete Step-by-Step User Manual & PDF Export Modal */}
+      <UserManualModal 
+        isOpen={showUserManual}
+        onClose={() => setShowUserManual(false)}
+        adminEmail="jemalfano030@gmail.com"
+      />
 
       {/* Global Interactive Payment Modal Overlay */}
       <AnimatePresence>

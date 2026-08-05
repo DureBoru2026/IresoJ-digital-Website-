@@ -130,7 +130,7 @@ export default function AdminUsers({
             <button onclick="window.print()" style="padding: 8px 16px; background: #0284c7; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Print Activity Record</button>
           </div>
           <div class="header">
-            <h1>ES Digital CSC — Customer Activity Audit Statement</h1>
+            <h1>IresoJ Digital CSC — Customer Activity Audit Statement</h1>
             <div class="meta">
               <strong>Client Name:</strong> ${activeCustomerModal.name} | <strong>Contact:</strong> ${activeCustomerModal.contact}<br>
               <strong>Acquisition Origin:</strong> ${activeCustomerModal.source} | <strong>Lifetime Value:</strong> ${formatETB(activeCustomerModal.spentAmount)}<br>
@@ -490,9 +490,9 @@ export default function AdminUsers({
                               <td className="p-2.5 font-mono text-slate-500">{b.bookingDate} at {b.bookingTime}</td>
                               <td className="p-2.5">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                  b.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' :
-                                  b.status === 'Confirmed' ? 'bg-blue-100 text-blue-800' :
-                                  b.status === 'Cancelled' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
+                                  b.status === 'completed' ? 'bg-emerald-100 text-emerald-800' :
+                                  b.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
+                                  b.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'
                                 }`}>
                                   {b.status}
                                 </span>
@@ -570,15 +570,15 @@ export default function AdminUsers({
                           <div className="flex justify-between items-center text-[10px] text-slate-400">
                             <span className="font-mono">{new Date(f.date).toLocaleString()}</span>
                             <span className={`px-2 py-0.5 rounded font-bold uppercase ${
-                              f.status === 'resolved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                              f.status === 'replied' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                             }`}>
                               {f.status}
                             </span>
                           </div>
                           <p className="text-slate-800 font-medium">{f.message}</p>
-                          {f.reply && (
+                          {f.replyMessage && (
                             <div className="bg-blue-50 border-l-2 border-blue-500 p-2 text-[11px] text-blue-900 rounded-r">
-                              <strong>Admin Reply:</strong> {f.reply}
+                              <strong>Admin Reply:</strong> {f.replyMessage}
                             </div>
                           )}
                         </div>

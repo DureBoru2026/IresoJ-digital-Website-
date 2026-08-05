@@ -10,10 +10,18 @@ type LanguageContextType = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
-  const [lang, setLang] = useState<Language>('en');
+  const [lang, setLangState] = useState<Language>(() => {
+    const saved = localStorage.getItem('iresoj_lang') as Language;
+    return (saved === 'om' || saved === 'am' || saved === 'en') ? saved : 'en';
+  });
+
+  const setLang = (newLang: Language) => {
+    setLangState(newLang);
+    localStorage.setItem('iresoj_lang', newLang);
+  };
 
   const t = (key: keyof typeof translations['en']) => {
-    return translations[lang][key] || translations['en'][key];
+    return translations[lang][key] || translations['en'][key] || key;
   };
 
   return (
