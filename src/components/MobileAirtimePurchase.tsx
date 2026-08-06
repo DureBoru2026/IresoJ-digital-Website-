@@ -144,24 +144,50 @@ export default function MobileAirtimePurchase({ onSubmitTransaction }: MobileAir
             </button>
           </div>
 
-          <div className="flex items-center gap-4 bg-slate-50 p-3 rounded-xl border border-slate-150">
-            <div className="bg-white p-1.5 rounded-lg border border-slate-200 shadow-sm shrink-0">
-              <QRCodeSVG 
-                value={gateway === 'telebirr' ? `telebirr://pay?merchant=${MERCHANT_TELEBIRR}&amount=${amount}` : `cbebirr://pay?merchant=${MERCHANT_CBE_BIRR}&amount=${amount}`}
-                size={70}
-                level="M"
-                includeMargin={false}
-              />
-              <p className="text-center font-mono text-[8px] text-slate-400 mt-1 font-bold">SCAN TO PAY</p>
+          <div className="bg-gradient-to-br from-sky-50 via-white to-sky-50/50 p-4 rounded-2xl border border-sky-200/80 shadow-xs space-y-3">
+            <div className="flex items-center justify-between border-b border-sky-100 pb-2">
+              <div>
+                <span className="text-[10px] font-mono font-bold text-sky-600 uppercase tracking-wider">Official Merchant Account</span>
+                <p className="font-extrabold text-slate-900 text-xs">Jemal Fano Haji (IresoJ Digital CSC)</p>
+              </div>
+              <div className="text-right font-mono text-xs font-black text-[#0EA5E9] bg-white px-2.5 py-1 rounded-lg border border-sky-200 shadow-2xs">
+                {gateway === 'telebirr' ? MERCHANT_TELEBIRR : MERCHANT_CBE_BIRR}
+              </div>
             </div>
-            <div className="text-xs text-slate-600 space-y-1">
-              <p className="font-bold text-slate-800 flex items-center gap-1">
-                <QrCode className="w-3.5 h-3.5 text-amber-500" />
-                Scan via {gateway}
-              </p>
-              <p>1. Open <strong className="text-slate-900 font-extrabold">App</strong> & <strong className="text-slate-900 font-extrabold">scan QR</strong></p>
-              <p>2. Pay exactly <strong className="text-slate-900 font-extrabold">{amount} ETB</strong></p>
-              <p>3. Enter <strong className="text-slate-900 font-extrabold">Reference Number</strong> below</p>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-md shrink-0 flex flex-col items-center">
+                <QRCodeSVG 
+                  value={gateway === 'telebirr' ? `telebirr://pay?merchant=${MERCHANT_TELEBIRR}&amount=${amount}&name=JemalFano` : `cbebirr://pay?merchant=${MERCHANT_CBE_BIRR}&amount=${amount}`}
+                  size={110}
+                  level="H"
+                  includeMargin={true}
+                  className="rounded-xl"
+                />
+                <span className="mt-1.5 font-mono text-[9px] font-extrabold text-slate-500 uppercase tracking-widest flex items-center gap-1">
+                  <QrCode className="w-3 h-3 text-[#0EA5E9]" />
+                  Scan to Pay {amount} ETB
+                </span>
+              </div>
+
+              <div className="text-xs text-slate-600 space-y-2 flex-1">
+                <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-[#0EA5E9] text-white flex items-center justify-center text-[10px]">1</span>
+                  Open your {gateway} App & Tap Scan
+                </p>
+                <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-[#0EA5E9] text-white flex items-center justify-center text-[10px]">2</span>
+                  Verify Name: <strong className="text-slate-900 underline">Jemal Fano Haji</strong>
+                </p>
+                <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-[#0EA5E9] text-white flex items-center justify-center text-[10px]">3</span>
+                  Pay exact amount: <strong className="text-emerald-700 font-mono text-sm">{amount}.00 ETB</strong>
+                </p>
+                <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-full bg-[#0EA5E9] text-white flex items-center justify-center text-[10px]">4</span>
+                  Paste SMS reference below for instant delivery
+                </p>
+              </div>
             </div>
           </div>
         </div>

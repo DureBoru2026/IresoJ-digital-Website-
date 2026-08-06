@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Mail, Phone, MapPin, Send, Laptop, Clock, CheckCircle2, Facebook, Instagram, MessageCircle, Youtube } from 'lucide-react';
 import { ActiveTab } from '../types';
 import { useLanguage } from '../LanguageContext';
+import { layoutTheme } from '../theme';
 
 const TikTokIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -77,7 +78,7 @@ export default function Footer({ setActiveTab }: FooterProps) {
   };
 
   return (
-    <footer id="app-footer" className="bg-slate-900 text-slate-300 border-t border-slate-800">
+    <footer id="app-footer" className={`${layoutTheme.bgClass} text-slate-300 border-t`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           
@@ -141,13 +142,14 @@ export default function Footer({ setActiveTab }: FooterProps) {
             <h3 className="font-display font-semibold text-white text-sm uppercase tracking-wider">
               {t('quickNavTitle')}
             </h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <button onClick={() => setActiveTab('home')} className="text-left text-slate-400 hover:text-white transition-colors py-1">{t('home')}</button>
-              <button onClick={() => setActiveTab('about')} className="text-left text-slate-400 hover:text-white transition-colors py-1">{t('aboutUs')}</button>
-              <button onClick={() => setActiveTab('services')} className="text-left text-slate-400 hover:text-white transition-colors py-1">{t('services')}</button>
-              <button onClick={() => setActiveTab('news')} className="text-left text-slate-400 hover:text-white transition-colors py-1">{t('news')}</button>
-              <button onClick={() => setActiveTab('contact')} className="text-left text-slate-400 hover:text-white transition-colors py-1">{t('contact')}</button>
-              <button onClick={() => setActiveTab('login')} className="text-left text-slate-400 hover:text-white transition-colors py-1">{t('staffLogin')}</button>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <button onClick={() => setActiveTab('home')} className="text-left text-slate-400 hover:text-[#0EA5E9] transition-colors py-1 font-bold">Home</button>
+              <button onClick={() => setActiveTab('digital-store')} className="text-left text-slate-400 hover:text-[#0EA5E9] transition-colors py-1 font-bold">Shop (Store)</button>
+              <button onClick={() => setActiveTab('services')} className="text-left text-slate-400 hover:text-[#0EA5E9] transition-colors py-1 font-bold">Club (Services)</button>
+              <button onClick={() => setActiveTab('contact')} className="text-left text-slate-400 hover:text-[#0EA5E9] transition-colors py-1 font-bold">Earn (Contact)</button>
+              <button onClick={() => setActiveTab('about')} className="text-left text-slate-400 hover:text-[#0EA5E9] transition-colors py-1">{t('aboutUs')}</button>
+              <button onClick={() => setActiveTab('news')} className="text-left text-slate-400 hover:text-[#0EA5E9] transition-colors py-1">{t('news')}</button>
+              <button onClick={() => setActiveTab('login')} className="text-left text-slate-400 hover:text-[#0EA5E9] transition-colors py-1">{t('staffLogin')}</button>
             </div>
           </div>
 

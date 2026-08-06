@@ -47,23 +47,43 @@ export default function PaymentModal({ product, onClose, onSubmitTransaction }: 
     setErrorMessage('');
     setSuccessMessage('');
     
-    if (!customerName.trim() || !customerPhone.trim() || !referenceNumber.trim()) {
+    const trimmedName = customerName.trim();
+    const trimmedPhone = customerPhone.trim();
+    const trimmedRef = referenceNumber.trim().toUpperCase();
+
+    if (!trimmedName || !trimmedPhone || !trimmedRef) {
       setErrorMessage('Please fill in all fields with valid information.');
       return;
     }
 
-    if (referenceNumber.length < 5) {
-      setErrorMessage('Please enter a valid reference number format.');
+    // Phone format validation (Ethiopian phone or general)
+    const phoneRegex = /^(\+251|0)9[0-9]{8}$|^(\+251|0)7[0-9]{8}$/;
+    if (!phoneRegex.test(trimmedPhone.replace(/\s+/g, ''))) {
+      setErrorMessage('Please enter a valid Ethiopian mobile number (e.g., 09xxxxxxxx or 07xxxxxxxx).');
       return;
+    }
+
+    if (gateway === 'telebirr') {
+      // Telebirr transaction reference is typically a 10-character alphanumeric code
+      if (trimmedRef.length < 8) {
+        setErrorMessage('Telebirr transaction reference should be at least 8 alphanumeric characters long.');
+        return;
+      }
+    } else {
+      // CBE Birr reference is typically an 8-12 character alphanumeric or numeric code
+      if (trimmedRef.length < 8) {
+        setErrorMessage('CBE Birr transaction reference should be at least 8 characters long.');
+        return;
+      }
     }
 
     setSubmitting(true);
     try {
       const response = await onSubmitTransaction({
-        referenceNumber,
+        referenceNumber: trimmedRef,
         paymentGateway: gateway,
-        customerName,
-        customerPhone,
+        customerName: trimmedName,
+        customerPhone: trimmedPhone,
         amount: product.price,
         purpose: product.title,
       });

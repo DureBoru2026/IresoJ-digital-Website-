@@ -22,11 +22,13 @@ import {
   Music2,
   Sun,
   Moon,
-  BookOpen
+  BookOpen,
+  ShoppingCart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ActiveTab, AuthState } from '../types';
 import { useLanguage } from '../LanguageContext';
+import { layoutTheme } from '../theme';
 
 interface HeaderProps {
   activeTab: ActiveTab;
@@ -36,9 +38,10 @@ interface HeaderProps {
   theme?: 'light' | 'dark';
   toggleTheme?: () => void;
   onOpenManual?: () => void;
+  cartItemCount?: number;
 }
 
-export default function Header({ activeTab, setActiveTab, authState, handleLogout, theme = 'light', toggleTheme, onOpenManual }: HeaderProps) {
+export default function Header({ activeTab, setActiveTab, authState, handleLogout, theme = 'light', toggleTheme, onOpenManual, cartItemCount = 0 }: HeaderProps) {
   const { t, lang, setLang } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [drawerSearch, setDrawerSearch] = useState('');
@@ -58,7 +61,7 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
   };
 
   return (
-    <header id="app-header" className="sticky top-0 z-40 bg-[#0F2D59] border-b border-[#1E40AF]/30 shadow-md transition-all duration-300">
+    <header id="app-header" className={`sticky top-0 z-40 ${layoutTheme.bgClass} border-b shadow-md transition-all duration-300`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
          <div className="flex justify-between items-center h-20">
           
@@ -68,11 +71,11 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
             className="flex items-center space-x-3 cursor-pointer group shrink-0"
             onClick={() => navigateTo('home')}
           >
-            <div className="w-11 h-11 bg-[#FACC15] rounded-full flex items-center justify-center text-slate-950 shadow-md group-hover:scale-105 transition-all duration-300">
+            <div className="w-11 h-11 bg-[#0EA5E9] rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-all duration-300">
               <Laptop className="w-5.5 h-5.5" />
             </div>
             <div>
-              <span className="font-display text-xl font-black tracking-tight text-[#FACC15] flex items-center gap-1.5 transition-colors">
+              <span className="font-display text-xl font-black tracking-tight text-[#0EA5E9] flex items-center gap-1.5 transition-colors">
                 <Search className="w-4.5 h-4.5 text-white shrink-0 animate-pulse" />
                 IresoJ Digital <span className="text-white">CSC</span>
               </span>
@@ -92,15 +95,15 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
                   onClick={() => navigateTo(item.id as ActiveTab)}
                   className={`relative px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 ${
                     isActive 
-                      ? 'bg-white/15 text-[#FACC15] shadow-xs' 
-                      : 'text-slate-100 hover:text-[#FACC15] hover:bg-white/5'
+                      ? 'bg-white/10 text-[#0EA5E9] shadow-xs border border-white/5' 
+                      : 'text-slate-100 hover:text-[#0EA5E9] hover:bg-white/5'
                   }`}
                 >
                   {item.label}
                   {isActive && (
                     <motion.div 
                       layoutId="activeTabUnderline"
-                      className="absolute bottom-0 left-4 right-4 h-0.5 bg-[#FACC15] rounded-full"
+                      className="absolute bottom-0 left-4 right-4 h-0.5 bg-[#0EA5E9] rounded-full"
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
@@ -137,35 +140,53 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
               <Globe className="w-3.5 h-3.5 text-slate-300 mr-1" />
               <button 
                 onClick={() => setLang('om')} 
-                className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${lang === 'om' ? 'bg-[#FACC15] text-slate-950' : 'text-slate-100 hover:text-[#FACC15] hover:bg-white/10'}`}
+                className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${lang === 'om' ? 'bg-[#0EA5E9] text-slate-900' : 'text-slate-100 hover:text-[#0EA5E9] hover:bg-white/10'}`}
                 title="Afaan Oromoo"
               >
                 OM
               </button>
               <button 
                 onClick={() => setLang('en')} 
-                className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${lang === 'en' ? 'bg-[#FACC15] text-slate-950' : 'text-slate-100 hover:text-[#FACC15] hover:bg-white/10'}`}
+                className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${lang === 'en' ? 'bg-[#0EA5E9] text-slate-900' : 'text-slate-100 hover:text-[#0EA5E9] hover:bg-white/10'}`}
                 title="English"
               >
                 EN
               </button>
               <button 
                 onClick={() => setLang('am')} 
-                className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${lang === 'am' ? 'bg-[#FACC15] text-slate-950' : 'text-slate-100 hover:text-[#FACC15] hover:bg-white/10'}`}
+                className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${lang === 'am' ? 'bg-[#0EA5E9] text-slate-900' : 'text-slate-100 hover:text-[#0EA5E9] hover:bg-white/10'}`}
                 title="Amharic"
               >
                 AM
               </button>
             </div>
 
+            {/* Airtime & Voucher Cart Button */}
+            <button
+              onClick={() => navigateTo('cart')}
+              className={`relative px-3 py-1.5 rounded-xl border text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'cart'
+                  ? 'bg-[#0EA5E9] text-slate-900 border-transparent shadow-md'
+                  : 'bg-white/10 border-white/20 text-slate-100 hover:bg-white/20'
+              }`}
+            >
+              <ShoppingCart className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Cart</span>
+              {(cartItemCount ?? 0) > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-amber-400 text-slate-900 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md animate-bounce">
+                  {cartItemCount}
+                </span>
+              )}
+            </button>
+
             {/* PDF User Manual Button */}
             {onOpenManual && (
               <button
                 onClick={onOpenManual}
                 title="Download Application User Manual PDF"
-                className="px-2.5 py-1.5 bg-[#FACC15] hover:bg-amber-400 active:scale-95 text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+                className="px-2.5 py-1.5 bg-[#0EA5E9] hover:bg-sky-400 active:scale-95 text-slate-900 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
-                <BookOpen className="w-3.5 h-3.5 text-slate-950" />
+                <BookOpen className="w-3.5 h-3.5 text-slate-900" />
                 <span className="hidden lg:inline">PDF Manual</span>
               </button>
             )}
@@ -177,7 +198,7 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
                   onClick={() => navigateTo('admin')}
                   className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all ${
                     activeTab === 'admin'
-                      ? 'bg-[#FACC15] text-slate-950 border-transparent'
+                      ? 'bg-[#0EA5E9] text-slate-900 border-transparent'
                       : 'border-white/20 text-slate-100 hover:bg-white/10'
                   }`}
                 >
@@ -197,7 +218,7 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
               <button
                 id="header-login-btn"
                 onClick={() => navigateTo('login')}
-                className="flex items-center space-x-1 px-3 py-1.5 text-xs font-black text-slate-100 hover:text-[#FACC15] hover:bg-white/10 rounded-xl transition-all group"
+                className="flex items-center space-x-1 px-3 py-1.5 text-xs font-black text-slate-100 hover:text-[#0EA5E9] hover:bg-white/10 rounded-xl transition-all group"
               >
                 <span>{t('staffSignIn')}</span>
                 <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:translate-x-0.5 transition-transform" />
@@ -219,7 +240,7 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
             <button
               id="mobile-menu-toggle"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2.5 rounded-xl text-slate-200 hover:text-[#FACC15] hover:bg-white/10 focus:outline-none transition-colors"
+              className="p-2.5 rounded-xl text-slate-200 hover:text-[#0EA5E9] hover:bg-white/10 focus:outline-none transition-colors"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

@@ -46,7 +46,7 @@ const INITIAL_AFFILIATE_PRODUCTS: AffiliateProduct[] = [
     creatorName: 'IresoJ Digital Team',
     productTitle: 'Full-Stack React & Express Website Login Architecture',
     category: 'Website Login',
-    originalUrl: 'https://github.com/es-digital/website-login-auth',
+    originalUrl: 'https://github.com/gitdagray/react-user-auth',
     price: 0,
     commissionRate: 2,
     downloads: 342,
@@ -58,7 +58,7 @@ const INITIAL_AFFILIATE_PRODUCTS: AffiliateProduct[] = [
     creatorName: 'Dure Boru Academy',
     productTitle: 'Web Development & Modern Agriculture Tech Guide (Book PDF)',
     category: 'Educational Book',
-    originalUrl: 'https://es-digital.org/books/web-agri-guide.pdf',
+    originalUrl: 'https://www.fao.org/3/i8220en/i8220en.pdf',
     price: 0,
     commissionRate: 2,
     downloads: 512,
@@ -70,7 +70,7 @@ const INITIAL_AFFILIATE_PRODUCTS: AffiliateProduct[] = [
     creatorName: 'Kore Tech Creator',
     productTitle: 'High-Converting UI/UX Design System Template',
     category: 'Design Template',
-    originalUrl: 'https://es-digital.org/templates/ui-design-system',
+    originalUrl: 'https://www.figma.com/community/file/1164917531737754395',
     price: 1500,
     commissionRate: 2,
     downloads: 189,
@@ -82,7 +82,7 @@ const INITIAL_AFFILIATE_PRODUCTS: AffiliateProduct[] = [
     creatorName: 'Alex Dev',
     productTitle: 'Production E-Commerce & Service Booking Project Structure',
     category: 'Project Structure',
-    originalUrl: 'https://github.com/es-digital/service-booking-structure',
+    originalUrl: 'https://github.com/mikhail-cct/booking-system-react',
     price: 2500,
     commissionRate: 2,
     downloads: 275,
@@ -358,7 +358,7 @@ export default function HomeDashboardShowcase() {
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400">PDF • 48 Pages</span>
                 <a 
-                  href="https://es-digital.org/books/web-development-handbook.pdf" 
+                  href="https://eloquentjavascript.net/Eloquent_JavaScript.pdf" 
                   target="_blank" 
                   rel="noreferrer"
                   className="px-4 py-2 bg-slate-900 hover:bg-sky-600 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
@@ -388,7 +388,7 @@ export default function HomeDashboardShowcase() {
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400">Video • 24 Min</span>
                 <a 
-                  href="https://es-digital.org/videos/website-login-auth" 
+                  href="https://www.youtube.com/watch?v=XVv6m0f98A8" 
                   target="_blank" 
                   rel="noreferrer"
                   className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
@@ -418,7 +418,7 @@ export default function HomeDashboardShowcase() {
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400">UI Kit • Vector/Code</span>
                 <a 
-                  href="https://es-digital.org/templates/booklet-ui-pack" 
+                  href="https://www.figma.com/community/file/1218151817540209590" 
                   target="_blank" 
                   rel="noreferrer"
                   className="px-4 py-2 bg-slate-900 hover:bg-amber-600 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"
@@ -448,7 +448,7 @@ export default function HomeDashboardShowcase() {
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                 <span className="text-xs font-mono text-slate-400">GitHub Repo • Boilerplate</span>
                 <a 
-                  href="https://github.com/es-digital/fullstack-boilerplate" 
+                  href="https://github.com/sahat/hackathon-starter" 
                   target="_blank" 
                   rel="noreferrer"
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors"

@@ -43,6 +43,7 @@ import FAQ from './components/FAQ';
 import HomeDashboardShowcase from './components/HomeDashboardShowcase';
 import ServiceCostEstimator from './components/ServiceCostEstimator';
 import UserManualModal from './components/UserManualModal';
+import Cart, { CartItem } from './components/Cart';
 
 const sampleWorks = [
   { id: 1, url: 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?auto=format&fit=crop&q=80&w=800', title: 'Corporate ID Card' },
@@ -99,6 +100,43 @@ const mobileTabs = [
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [assets, setAssets] = useState<DigitalAsset[]>([]);
+  
+  // Cart State for Multi-Card Airtime & Vouchers
+  const [cartItems, setCartItems] = useState<CartItem[]>([
+    { id: '1', carrier: 'ethio', denomination: 50, quantity: 1 },
+    { id: '2', carrier: 'safaricom', denomination: 100, quantity: 1 }
+  ]);
+
+  const handleAddToCart = (item: { carrier: 'ethio' | 'safaricom'; denomination: number }) => {
+    setCartItems(prev => {
+      const existingIndex = prev.findIndex(i => i.carrier === item.carrier && i.denomination === item.denomination);
+      if (existingIndex > -1) {
+        const updated = [...prev];
+        updated[existingIndex] = { ...updated[existingIndex], quantity: updated[existingIndex].quantity + 1 };
+        return updated;
+      } else {
+        return [...prev, { id: Math.random().toString(36).substring(2, 9), carrier: item.carrier, denomination: item.denomination, quantity: 1 }];
+      }
+    });
+  };
+
+  const handleUpdateCartQuantity = (id: string, delta: number) => {
+    setCartItems(prev => prev.map(item => {
+      if (item.id === id) {
+        const newQty = item.quantity + delta;
+        return newQty > 0 ? { ...item, quantity: newQty } : null;
+      }
+      return item;
+    }).filter(Boolean) as CartItem[]);
+  };
+
+  const handleRemoveCartItem = (id: string) => {
+    setCartItems(prev => prev.filter(i => i.id !== id));
+  };
+
+  const handleClearCart = () => {
+    setCartItems([]);
+  };
   const [lastUpdatedTime, setLastUpdatedTime] = useState<string>(
     () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
   );
@@ -965,6 +1003,21 @@ const mobileTabs = [
 
   const renderActiveView = () => {
     switch (activeTab) {
+
+      // Cart View for Multi-Card Airtime & Vouchers
+      case 'cart':
+        return (
+          <div className="py-6 animate-in fade-in duration-300">
+            <Cart
+              items={cartItems}
+              onUpdateQuantity={handleUpdateCartQuantity}
+              onRemoveItem={handleRemoveCartItem}
+              onAddItem={handleAddToCart}
+              onSubmitTransaction={handleTransactionReferenceSubmit}
+              onClearCart={handleClearCart}
+            />
+          </div>
+        );
       
       // 1. HOME VIEW
       case 'home':
@@ -1920,20 +1973,38 @@ const mobileTabs = [
 
       // 7. ADMIN PROTECTED DASHBOARD RENDERER
       case 'admin':
-        if (!authState.isAuthenticated) {
+        if (!authState.isAuthenticated || authState.user?.role !== 'admin') {
           return (
-            <div className="max-w-md mx-auto py-12 text-center space-y-4">
-              <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
-              <h2 className="font-display font-bold text-slate-900 text-lg">Protected Administrative Area</h2>
-              <p className="text-xs text-slate-500">
-                You must login with staff credentials to manage transactions and edit databases.
-              </p>
-              <button
-                onClick={() => setActiveTab('login')}
-                className="px-4 py-2 bg-[#0EA5E9] text-white rounded-lg text-xs font-bold shadow hover:bg-sky-600 transition-colors"
-              >
-                Go to Sign In
-              </button>
+            <div className="max-w-md mx-auto py-16 text-center space-y-6 bg-red-50/50 dark:bg-red-950/10 border border-red-200/60 dark:border-red-900/30 p-8 rounded-3xl animate-in fade-in zoom-in-95 duration-300">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto shadow-md">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="font-display font-black text-slate-900 dark:text-white text-xl tracking-tight">403 Access Denied</h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                  {authState.isAuthenticated 
+                    ? `Your account (${authState.user?.email}) has the role "${authState.user?.role || 'Guest'}". You must have an administrator role to access this area.`
+                    : 'You must login with staff administrator credentials to manage transactions, view system analytics, and edit databases.'
+                  }
+                </p>
+              </div>
+              <div className="pt-2 flex flex-col gap-3">
+                {!authState.isAuthenticated ? (
+                  <button
+                    onClick={() => setActiveTab('login')}
+                    className="w-full py-3 bg-[#0EA5E9] hover:bg-sky-600 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-md shadow-sky-100/10 transition-all active:scale-95 cursor-pointer"
+                  >
+                    Go to Sign In
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setActiveTab('home')}
+                    className="w-full py-3 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 cursor-pointer"
+                  >
+                    Return to Home
+                  </button>
+                )}
+              </div>
             </div>
           );
         }
@@ -2123,6 +2194,7 @@ const mobileTabs = [
         theme={theme}
         toggleTheme={toggleTheme}
         onOpenManual={() => setShowUserManual(true)}
+        cartItemCount={cartItems.reduce((sum, item) => sum + item.quantity, 0)}
       />
 
       {/* Main Body View Layout */}
@@ -2167,6 +2239,7 @@ const mobileTabs = [
         isOpen={showUserManual}
         onClose={() => setShowUserManual(false)}
         adminEmail="jemalfano030@gmail.com"
+        isAdmin={authState.isAuthenticated}
       />
 
       {/* Global Interactive Payment Modal Overlay */}

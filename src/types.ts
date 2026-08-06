@@ -134,5 +134,5 @@ export interface PayrollRecord {
   notes?: string;
 }
 
-export type ActiveTab = 'home' | 'about' | 'services' | 'news' | 'contact' | 'login' | 'admin' | 'digital-store' | 'agriculture' | 'academy' | 'marketplace' | 'wishlist' | 'community' | 'durepay';
+export type ActiveTab = 'home' | 'about' | 'services' | 'news' | 'contact' | 'login' | 'admin' | 'digital-store' | 'agriculture' | 'academy' | 'marketplace' | 'wishlist' | 'community' | 'durepay' | 'cart';
 export type AdminSubTab = 'dashboard' | 'products' | 'payments' | 'bookings' | 'history' | 'users' | 'share' | 'reports' | 'assets' | 'logs' | 'commission' | 'payroll';
