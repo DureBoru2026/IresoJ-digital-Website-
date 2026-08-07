@@ -1991,6 +1991,7 @@ const mobileTabs = [
                 <AnimatePresence mode="wait">
                   {contactSuccess && (
                     <motion.div 
+                      key="contact-success"
                       initial={{ opacity: 0, height: 0, marginBottom: 0 }}
                       animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
                       exit={{ opacity: 0, height: 0, marginBottom: 0 }}
@@ -2003,6 +2004,7 @@ const mobileTabs = [
 
                   {contactError && (
                     <motion.div 
+                      key="contact-error"
                       initial={{ opacity: 0, height: 0, marginBottom: 0 }}
                       animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
                       exit={{ opacity: 0, height: 0, marginBottom: 0 }}

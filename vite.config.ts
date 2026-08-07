@@ -19,18 +19,19 @@ export default defineConfig(() => {
           theme_color: '#0f172a',
           icons: [
             {
-              src: 'pwa-192x192.png',
+              src: 'pwa-192x192.jpg',
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/jpeg'
             },
             {
-              src: 'pwa-512x512.png',
+              src: 'pwa-512x512.jpg',
               sizes: '512x512',
-              type: 'image/png'
+              type: 'image/jpeg'
             }
           ]
         },
         workbox: {
+          maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/ais-.*\.run\.app\/api\/products/,
