@@ -4,15 +4,19 @@ import {
   MessageSquare, MessageCircle, BookOpen, AlertCircle, Sparkles, CheckCircle2,
   ListFilter, DollarSign, Calendar, Heart, Shield, HelpCircle, Eye, LogIn,
   Send, Search, ChevronDown, RotateCcw, X, ZoomIn, Download, Star,
-  Home, ShoppingBag, Users, Coins
+  Home, ShoppingBag, Users, Coins, User, UserPlus, Bell, BellRing
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useLanguage } from './LanguageContext';
+import { db } from './lib/firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 import { 
   ProductService, Announcement, Feedback, Transaction, 
-  CustomerRecord, AuthState, ActiveTab, AdminSubTab, Booking, DigitalAsset
+  CustomerRecord, AuthState, ActiveTab, AdminSubTab, Booking, DigitalAsset,
+  WatchedProduct
 } from './types';
+import { useDataSync } from './hooks/useDataSync';
 
 // Modular Components
 import Header from './components/Header';
@@ -32,7 +36,11 @@ import AdminAssets from './components/AdminAssets';
 import AdminSecurityLogs from './components/AdminSecurityLogs';
 import AdminCommission from './components/AdminCommission';
 import AdminPayroll from './components/AdminPayroll';
+import AdminMessages from './components/AdminMessages';
+import SupportMessagesView from './components/SupportMessagesView';
+import SupportChatWidget from './components/SupportChatWidget';
 import ServiceTracker from './components/ServiceTracker';
+import StartAndMarketplaceSection from './components/StartAndMarketplaceSection';
 import FloatingContact from './components/FloatingContact';
 import UpdateNotifier from './components/UpdateNotifier';
 import DigitalStore from './components/DigitalStore';
@@ -44,6 +52,8 @@ import HomeDashboardShowcase from './components/HomeDashboardShowcase';
 import ServiceCostEstimator from './components/ServiceCostEstimator';
 import UserManualModal from './components/UserManualModal';
 import Cart, { CartItem } from './components/Cart';
+import LoyaltyLeaderboard from './components/LoyaltyLeaderboard';
+import { formatETB } from './utils';
 
 const sampleWorks = [
   { id: 1, url: 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?auto=format&fit=crop&q=80&w=800', title: 'Corporate ID Card' },
@@ -55,8 +65,8 @@ const sampleWorks = [
 const mobileTabs = [
   { id: 'home', label: 'Home', icon: Home, targetTab: 'home' as const },
   { id: 'shop', label: 'Shop', icon: ShoppingBag, targetTab: 'digital-store' as const },
-  { id: 'club', label: 'Club', icon: Users, targetTab: 'services' as const },
-  { id: 'earn', label: 'Earn', icon: Coins, targetTab: 'contact' as const }
+  { id: 'club', label: 'Club', icon: UserPlus, targetTab: 'community' as const },
+  { id: 'earn', label: 'Earn', icon: Coins, targetTab: 'durepay' as const }
 ];
 
   export default function App() {
@@ -73,6 +83,7 @@ const mobileTabs = [
 
   useEffect(() => {
     const root = document.documentElement;
+    root.style.transition = 'background-color 0.5s ease, color 0.5s ease';
     if (theme === 'dark') {
       root.classList.add('dark');
     } else {
@@ -80,6 +91,24 @@ const mobileTabs = [
     }
     localStorage.setItem('app_theme', theme);
   }, [theme]);
+
+  // Award Loyalty Points for purchases
+  const awardLoyaltyPoints = (amount: number) => {
+    if (!authState.isAuthenticated || !authState.user) return;
+    const pointsToAdd = Math.floor(amount / 10); // 1 point for every 10 ETB
+    const updatedUser = {
+      ...authState.user,
+      loyaltyPoints: (authState.user.loyaltyPoints || 0) + pointsToAdd
+    };
+    setAuthState(prev => ({ ...prev, user: updatedUser }));
+    localStorage.setItem('es_digital_user_profile', JSON.stringify(updatedUser));
+    
+    // Sync to Firestore if user ID exists
+    if (updatedUser.id) {
+      setDoc(doc(db, 'users', updatedUser.id), updatedUser, { merge: true })
+        .catch(err => console.error("Loyalty points sync error:", err));
+    }
+  };
 
   const toggleTheme = () => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
@@ -100,6 +129,57 @@ const mobileTabs = [
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [assets, setAssets] = useState<DigitalAsset[]>([]);
+
+  // Price Drop Notification State
+  const [watchedProducts, setWatchedProducts] = useState<WatchedProduct[]>(() => {
+    const saved = localStorage.getItem('watched_products');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [priceDropAlerts, setPriceDropAlerts] = useState<{productId: string, oldPrice: number, newPrice: number, productTitle: string}[]>([]);
+
+  const toggleWatchProduct = (productId: string, currentPrice: number) => {
+    setWatchedProducts(prev => {
+      const isWatched = prev.some(wp => wp.productId === productId);
+      let updated;
+      if (isWatched) {
+        updated = prev.filter(wp => wp.productId !== productId);
+      } else {
+        updated = [...prev, { productId, lastSeenPrice: currentPrice }];
+      }
+      localStorage.setItem('watched_products', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Price Drop Monitor
+  useEffect(() => {
+    if (products.length === 0 || watchedProducts.length === 0) return;
+
+    const alerts: typeof priceDropAlerts = [];
+    let hasChanges = false;
+    const updatedWatched = watchedProducts.map(wp => {
+      const product = products.find(p => p.id === wp.productId);
+      if (product && product.price < wp.lastSeenPrice) {
+        alerts.push({
+          productId: product.id,
+          oldPrice: wp.lastSeenPrice,
+          newPrice: product.price,
+          productTitle: product.title
+        });
+        hasChanges = true;
+        return { ...wp, lastSeenPrice: product.price };
+      }
+      return wp;
+    });
+
+    if (hasChanges) {
+      setPriceDropAlerts(prev => [...prev, ...alerts]);
+      setWatchedProducts(updatedWatched);
+      localStorage.setItem('watched_products', JSON.stringify(updatedWatched));
+      playNotificationSound();
+    }
+  }, [products, watchedProducts]);
   
   // Cart State for Multi-Card Airtime & Vouchers
   const [cartItems, setCartItems] = useState<CartItem[]>([
@@ -141,6 +221,12 @@ const mobileTabs = [
     () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
   );
 
+  // Periodic Data Sync & Redundancy Simulation (Local Storage Backup)
+  const { lastMessage: syncMessage } = useDataSync(
+    authState.user?.role === 'admin' ? transactions : [], 
+    authState.user?.role === 'admin' ? bookings : []
+  );
+
   // Sound Notification Ref
   const prevCountsRef = useRef({ bookings: 0, feedback: 0, transactions: 0 });
   const isFirstLoadRef = useRef(true);
@@ -158,7 +244,7 @@ const mobileTabs = [
   // Admin Data Polling
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (authState.isAuthenticated && authState.token) {
+    if (authState.isAuthenticated && authState.token && authState.user?.role === 'admin') {
       interval = setInterval(() => {
         loadAdminData(authState.token!);
       }, 30000); // Poll every 30 seconds
@@ -166,7 +252,41 @@ const mobileTabs = [
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [authState.isAuthenticated, authState.token]);
+  }, [authState.isAuthenticated, authState.token, authState.user?.role]);
+
+  // Administrator Session Inactivity Timeout (30 minutes)
+  useEffect(() => {
+    if (!authState.isAuthenticated || authState.user?.role !== 'admin') {
+      return;
+    }
+
+    const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes of inactivity
+    let timeoutId: NodeJS.Timeout;
+
+    const resetInactivityTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        handleLogout();
+        alert('Security Notice: You have been logged out of the Administrator Portal due to 30 minutes of inactivity.');
+      }, INACTIVITY_LIMIT);
+    };
+
+    const userActivityEvents = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll', 'click'];
+    
+    userActivityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, resetInactivityTimer, { passive: true });
+    });
+
+    // Start timer on mount/auth
+    resetInactivityTimer();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      userActivityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, resetInactivityTimer);
+      });
+    };
+  }, [authState.isAuthenticated, authState.user?.role]);
 
   // DIGITAL ASSETS
   const loadAssets = async () => {
@@ -253,6 +373,18 @@ const mobileTabs = [
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // User Registration & Auth Tab States
+  const [authTab, setAuthTab] = useState<'user' | 'admin'>('user');
+  const [userAuthMode, setUserAuthMode] = useState<'signin' | 'register'>('register');
+  const [regFullName, setRegFullName] = useState('');
+  const [regEmailPhone, setRegEmailPhone] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirmPassword, setRegConfirmPassword] = useState('');
+  const [regSuccessMsg, setRegSuccessMsg] = useState('');
+  const [affiliateCopied, setAffiliateCopied] = useState(false);
+  const [affiliatePhone, setAffiliatePhone] = useState('0995852194');
+  const [affiliateItem, setAffiliateItem] = useState('telecom_airtime');
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [isAdminDataLoading, setIsAdminDataLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -298,37 +430,24 @@ const mobileTabs = [
 
   // Check for saved login session on mount
   useEffect(() => {
-    const savedToken = localStorage.getItem('es_digital_admin_token');
-    const savedUser = localStorage.getItem('es_digital_admin_user');
-    
-    if (savedToken && savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      // Validate saved token with server
-      fetch('/api/auth/verify', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${savedToken}`,
-        }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setAuthState({
-            isAuthenticated: true,
-            token: savedToken,
-            user: parsedUser
-          });
-        } else {
-          handleLogout();
-        }
-      })
-      .catch(() => {
-        // Fallback offline verification if server is spinning up
-        setAuthState({
-          isAuthenticated: true,
-          token: savedToken,
-          user: parsedUser
-        });
+    const adminToken = localStorage.getItem('es_digital_admin_token');
+    const adminUser = localStorage.getItem('es_digital_admin_user');
+    const userToken = localStorage.getItem('es_digital_user_token');
+    const userProfile = localStorage.getItem('es_digital_user_profile');
+
+    if (adminToken && adminUser) {
+      const parsedUser = JSON.parse(adminUser);
+      setAuthState({
+        isAuthenticated: true,
+        token: adminToken,
+        user: parsedUser
+      });
+    } else if (userToken && userProfile) {
+      const parsedUser = JSON.parse(userProfile);
+      setAuthState({
+        isAuthenticated: true,
+        token: userToken,
+        user: parsedUser
       });
     }
 
@@ -336,35 +455,39 @@ const mobileTabs = [
     loadAssets();
   }, []);
 
-  // Whenever isAuthenticated changes, load admin data if true
+  // Whenever isAuthenticated changes, load admin data if user is an admin
   useEffect(() => {
-    if (authState.isAuthenticated && authState.token) {
+    if (authState.isAuthenticated && authState.token && authState.user?.role === 'admin') {
       loadAdminData(authState.token);
     }
-  }, [authState.isAuthenticated]);
+  }, [authState.isAuthenticated, authState.user?.role]);
 
   const loadPublicData = async () => {
     setIsProductsLoading(true);
     try {
       const prodRes = await fetch('/api/products');
-      const prodData = await prodRes.json();
-      setProducts(prodData);
+      if (prodRes.ok) {
+        const prodData = await prodRes.json();
+        setProducts(prodData);
 
-      const annRes = await fetch('/api/announcements');
-      const annData = await annRes.json();
-      setAnnouncements(annData);
-
-      // Instantly open product details if scanned from QR / deep-linked
-      const urlParams = new URLSearchParams(window.location.search);
-      const productId = urlParams.get('productId');
-      if (productId) {
-        const matchingProduct = prodData.find((p: any) => p.id === productId);
-        if (matchingProduct) {
-          handleProductSelection(matchingProduct);
+        // Instantly open product details if scanned from QR / deep-linked
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('productId');
+        if (productId) {
+          const matchingProduct = prodData.find((p: any) => p.id === productId);
+          if (matchingProduct) {
+            handleProductSelection(matchingProduct);
+          }
         }
       }
+
+      const annRes = await fetch('/api/announcements');
+      if (annRes.ok) {
+        const annData = await annRes.json();
+        setAnnouncements(annData);
+      }
     } catch (err) {
-      console.error('Error fetching public datasets:', err);
+      console.warn('Network issue fetching public datasets:', err);
     } finally {
       // Small delay for smooth transition and visual delight of skeleton states
       setTimeout(() => {
@@ -374,6 +497,10 @@ const mobileTabs = [
   };
 
   const loadAdminData = async (token: string) => {
+    if (!token || authState.user?.role !== 'admin') {
+      setIsAdminDataLoading(false);
+      return;
+    }
     setIsAdminDataLoading(true);
     const headers = { 'Authorization': `Bearer ${token}` };
     try {
@@ -453,7 +580,7 @@ const mobileTabs = [
         localStorage.removeItem('es_digital_admin_user');
       }
     } catch (err) {
-      console.error('Error fetching administrative datasets:', err);
+      console.warn('Network issue fetching administrative datasets:', err);
     } finally {
       setTimeout(() => {
         setIsAdminDataLoading(false);
@@ -551,9 +678,94 @@ const mobileTabs = [
     }
   };
 
+  const handleUserRegisterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    setRegSuccessMsg('');
+
+    if (!regFullName.trim() || !regEmailPhone.trim() || !regPassword.trim()) {
+      setLoginError('Maaloo Maqaa Guutuu, Teessoo Email/Bilbilaa fi Password guutaa.');
+      return;
+    }
+
+    if (regPassword !== regConfirmPassword) {
+      setLoginError('Password filattan wal hin simu. Irra deebi’aatii mirkaneessaa.');
+      return;
+    }
+
+    const newUser = {
+      id: 'usr_' + Math.random().toString(36).substring(2, 9),
+      username: regFullName.trim(),
+      email: regEmailPhone.trim(),
+      role: 'user' as const,
+      loyaltyPoints: 0
+    };
+    const userToken = 'user-session-token-' + Date.now();
+
+    // Save to Firestore for shared leaderboard/persistence
+    setDoc(doc(db, 'users', newUser.id), newUser).catch(err => console.error("Firestore sync error:", err));
+
+    localStorage.setItem('es_digital_user_token', userToken);
+    localStorage.setItem('es_digital_user_profile', JSON.stringify(newUser));
+
+    setAuthState({
+      isAuthenticated: true,
+      token: userToken,
+      user: newUser
+    });
+
+    setRegSuccessMsg('Baga nagaan dhuftan! Akkauntiin keessan milkaa’inaan banameera.');
+    setTimeout(() => {
+      setActiveTab('digital-store');
+      setRegFullName('');
+      setRegEmailPhone('');
+      setRegPassword('');
+      setRegConfirmPassword('');
+      setRegSuccessMsg('');
+    }, 1200);
+  };
+
+  const handleUserSignInSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    setRegSuccessMsg('');
+
+    if (!regEmailPhone.trim() || !regPassword.trim()) {
+      setLoginError('Maaloo Email/Bilbilaa fi Password guutaa.');
+      return;
+    }
+
+    const user = {
+      id: 'usr_' + Math.random().toString(36).substring(2, 9),
+      username: regEmailPhone.split('@')[0] || regEmailPhone,
+      email: regEmailPhone.trim(),
+      role: 'user' as const
+    };
+    const userToken = 'user-session-token-' + Date.now();
+
+    localStorage.setItem('es_digital_user_token', userToken);
+    localStorage.setItem('es_digital_user_profile', JSON.stringify(user));
+
+    setAuthState({
+      isAuthenticated: true,
+      token: userToken,
+      user: user
+    });
+
+    setRegSuccessMsg('Baga nagaan deebitan! Isiin seenuun keessan mirkanaa’eera.');
+    setTimeout(() => {
+      setActiveTab('digital-store');
+      setRegEmailPhone('');
+      setRegPassword('');
+      setRegSuccessMsg('');
+    }, 1000);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('es_digital_admin_token');
     localStorage.removeItem('es_digital_admin_user');
+    localStorage.removeItem('es_digital_user_token');
+    localStorage.removeItem('es_digital_user_profile');
     setAuthState({
       isAuthenticated: false,
       token: null,
@@ -915,6 +1127,13 @@ const mobileTabs = [
         body: JSON.stringify({ status, notes })
       });
       if (res.ok) {
+        // Award points if approved
+        if (status === 'approved') {
+          const tx = transactions.find(t => t.id === id);
+          if (tx && tx.amount) {
+            awardLoyaltyPoints(tx.amount);
+          }
+        }
         await loadAdminData(authState.token!);
         return true;
       }
@@ -1024,11 +1243,12 @@ const mobileTabs = [
         return (
           <div id="home-view" className="space-y-16 animate-in fade-in duration-300">
             
-            {/* Service Tracking Hub */}
-            <div className="pt-4">
-              <ServiceTracker 
-                isAdmin={authState.isAuthenticated} 
-                onBookingStatusUpdate={handleUpdateBookingStatus} 
+            {/* Start My Page & Browse Marketplace Section */}
+            <div className="pt-2">
+              <StartAndMarketplaceSection
+                onNavigateTab={(tab) => setActiveTab(tab)}
+                onOpenBookingModal={() => setShowBookingModal(true)}
+                isAuthenticated={authState.isAuthenticated}
               />
             </div>
 
@@ -1559,7 +1779,13 @@ const mobileTabs = [
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                         {maintenanceProducts.map((prod) => (
-                          <ProductCard key={prod.id} product={prod} onSelect={(p) => handleProductSelection(p)} />
+                          <ProductCard 
+                            key={prod.id} 
+                            product={prod} 
+                            onSelect={(p) => handleProductSelection(p)} 
+                            isWatched={watchedProducts.some(wp => wp.productId === prod.id)}
+                            onToggleWatch={toggleWatchProduct}
+                          />
                         ))}
                       </div>
                     </div>
@@ -1579,7 +1805,13 @@ const mobileTabs = [
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                       {printProducts.map((prod) => (
-                        <ProductCard key={prod.id} product={prod} onSelect={(p) => handleProductSelection(p)} />
+                        <ProductCard 
+                          key={prod.id} 
+                          product={prod} 
+                          onSelect={(p) => handleProductSelection(p)} 
+                          isWatched={watchedProducts.some(wp => wp.productId === prod.id)}
+                          onToggleWatch={toggleWatchProduct}
+                        />
                       ))}
                     </div>
                     
@@ -1628,7 +1860,13 @@ const mobileTabs = [
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                       {trainingProducts.map((prod) => (
-                        <ProductCard key={prod.id} product={prod} onSelect={(p) => handleProductSelection(p)} />
+                        <ProductCard 
+                          key={prod.id} 
+                          product={prod} 
+                          onSelect={(p) => handleProductSelection(p)} 
+                          isWatched={watchedProducts.some(wp => wp.productId === prod.id)}
+                          onToggleWatch={toggleWatchProduct}
+                        />
                       ))}
                     </div>
                   </div>
@@ -1655,7 +1893,13 @@ const mobileTabs = [
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                       {salesProducts.map((prod) => (
-                        <ProductCard key={prod.id} product={prod} onSelect={(p) => handleProductSelection(p)} />
+                        <ProductCard 
+                          key={prod.id} 
+                          product={prod} 
+                          onSelect={(p) => handleProductSelection(p)} 
+                          isWatched={watchedProducts.some(wp => wp.productId === prod.id)}
+                          onToggleWatch={toggleWatchProduct}
+                        />
                       ))}
                     </div>
                   </div>
@@ -1701,10 +1945,10 @@ const mobileTabs = [
             
             <div className="text-center space-y-1.5 sm:space-y-2">
               <h1 className="font-display text-2xl sm:text-3xl font-extrabold text-slate-900">
-                Contact Us & Leave Feedback
+                {t('contactMainTitle')}
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
-                Have questions about custom leather configurations or repair diagnostic timelines? Submit an inquiry directly to our dashboard!
+                {t('contactMainSubtitle')}
               </p>
             </div>
 
@@ -1713,7 +1957,7 @@ const mobileTabs = [
               {/* Form panel - 3/5 cols */}
               <div className="md:col-span-3 bg-white border border-slate-100 rounded-2xl p-4 sm:p-8 shadow-sm space-y-3 sm:space-y-6 text-left">
                 <h3 className="font-display font-bold text-slate-800 text-xs sm:text-sm uppercase tracking-wider">
-                  Feedback Submission Form
+                  {t('feedbackFormTitle')}
                 </h3>
 
                 {contactSuccess && (
@@ -1734,12 +1978,12 @@ const mobileTabs = [
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 sm:mb-1">
-                        Your Full Name *
+                        {t('fullNameLabel')}
                       </label>
                       <input
                         type="text"
                         required
-                        placeholder="e.g. Jemal Ireso"
+                        placeholder={t('fullNamePlaceholder')}
                         value={contactName}
                         onChange={(e) => setContactName(e.target.value)}
                         className="w-full text-xs px-3 sm:px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0EA5E9] bg-slate-50"
@@ -1747,11 +1991,11 @@ const mobileTabs = [
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 sm:mb-1">
-                        Phone Number
+                        {t('phoneNumberLabel')}
                       </label>
                       <input
                         type="tel"
-                        placeholder="e.g. +251 995 852 194"
+                        placeholder={t('phoneNumberPlaceholder')}
                         value={contactPhone}
                         onChange={(e) => setContactPhone(e.target.value)}
                         className="w-full text-xs px-3 sm:px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0EA5E9] bg-slate-50"
@@ -1761,12 +2005,12 @@ const mobileTabs = [
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 sm:mb-1">
-                      Email Address *
+                      {t('emailAddressLabel')}
                     </label>
                     <input
                       type="email"
                       required
-                      placeholder="e.g. iresojemal44@gmail.com"
+                      placeholder={t('emailAddressPlaceholder')}
                       value={contactEmail}
                       onChange={(e) => setContactEmail(e.target.value)}
                       className="w-full text-xs px-3 sm:px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0EA5E9] bg-slate-50"
@@ -1775,7 +2019,7 @@ const mobileTabs = [
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 sm:mb-2">
-                      Experience Rating
+                      {t('experienceRatingLabel')}
                     </label>
                     <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-4">
                       {[1, 2, 3, 4, 5].map((star) => (
@@ -1798,12 +2042,12 @@ const mobileTabs = [
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 sm:mb-1">
-                      Detailed Message Inquiry *
+                      {t('detailedMessageLabel')}
                     </label>
                     <textarea
                       required
                       rows={3}
-                      placeholder="Write your feedback, inquiry, or question for management..."
+                      placeholder={t('detailedMessagePlaceholder')}
                       value={contactMessage}
                       onChange={(e) => setContactMessage(e.target.value)}
                       className="w-full text-xs px-3 sm:px-3.5 py-2 sm:py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0EA5E9] bg-slate-50"
@@ -1816,7 +2060,7 @@ const mobileTabs = [
                     className="w-full bg-[#0EA5E9] hover:bg-sky-600 text-white py-2.5 sm:py-3 rounded-xl font-bold text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-md shadow-sky-100 active:scale-[0.98] disabled:opacity-50"
                   >
                     <Send className="w-4 h-4" />
-                    <span>{loading ? 'Submitting Form...' : 'Send Message To IresoJ Digital'}</span>
+                    <span>{loading ? t('verifying') : t('sendMessageBtn')}</span>
                   </button>
 
                 </form>
@@ -1830,12 +2074,12 @@ const mobileTabs = [
                   <div className="flex items-center gap-2">
                     <MessageCircle className="w-6 h-6 text-emerald-200" />
                     <div>
-                      <h4 className="font-extrabold text-white text-sm font-display">Instant WhatsApp Inquiry</h4>
-                      <p className="text-[11px] text-emerald-100">Direct chat with IresoJ Digital tech support team</p>
+                      <h4 className="font-extrabold text-white text-sm font-display">{t('whatsappInquiryTitle')}</h4>
+                      <p className="text-[11px] text-emerald-100">{t('whatsappInquirySubtitle')}</p>
                     </div>
                   </div>
                   <p className="text-xs text-emerald-50 leading-relaxed font-medium">
-                    Have a quick question about repair fees or digital publishing? Click below to start a pre-filled chat on WhatsApp.
+                    {t('whatsappInquiryDesc')}
                   </p>
                   <a
                     href="https://wa.me/251995852194?text=Hello%20IresoJ%20Digital%20CSC!%20I%20would%20like%20to%20inquire%20about%20your%20computer%20repair%20and%20digital%20printing%20services%20in%20Kore%20Town."
@@ -1844,35 +2088,35 @@ const mobileTabs = [
                     className="inline-flex items-center justify-center gap-2 w-full py-3 bg-white text-emerald-800 hover:bg-emerald-50 font-black text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
                   >
                     <MessageCircle className="w-4 h-4 text-emerald-600 fill-emerald-600" />
-                    <span>Contact via WhatsApp (+251 995 852 194)</span>
+                    <span>{t('contactWhatsappBtn')}</span>
                   </a>
                 </div>
 
                 {/* Physical details block */}
                 <div className="bg-slate-900 text-slate-300 rounded-2xl border border-slate-800 p-6 space-y-5 shadow-md">
                   <h3 className="font-display font-bold text-white text-sm uppercase tracking-wider">
-                    Our Contact Info
+                    {t('ourContactInfoTitle')}
                   </h3>
                   
                   <ul className="space-y-4 text-xs">
                     <li className="flex items-start space-x-3">
                       <MapPin className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                       <div>
-                        <strong className="text-white block font-display">Service Center Hub</strong>
-                        <span>Kore Town, Kore Woreda, West Arsi Zone, Oromia Region, Ethiopia</span>
+                        <strong className="text-white block font-display">{t('serviceCenterHubLabel')}</strong>
+                        <span>{t('serviceCenterHubValue')}</span>
                       </div>
                     </li>
                     <li className="flex items-start space-x-3">
                       <Phone className="w-5 h-5 text-[#0EA5E9] shrink-0" />
                       <div>
-                        <strong className="text-white block font-display">Inquiry Phone Line</strong>
+                        <strong className="text-white block font-display">{t('inquiryPhoneLineLabel')}</strong>
                         <span>+251 995 852 194</span>
                       </div>
                     </li>
                     <li className="flex items-start space-x-3">
                       <Mail className="w-5 h-5 text-[#0EA5E9] shrink-0" />
                       <div>
-                        <strong className="text-white block font-display">Support Email</strong>
+                        <strong className="text-white block font-display">{t('supportEmailLabel')}</strong>
                         <span className="break-all">iresojemal44@gmail.com</span>
                       </div>
                     </li>
@@ -1899,73 +2143,494 @@ const mobileTabs = [
           </div>
         );
 
-      // 6. STAFF LOGIN VIEW
-      case 'login':
+      // 6. CLUB (COMMUNITY & STUDENT TECH HUB)
+      case 'community':
         return (
-          <div id="login-view" className="max-w-md mx-auto py-12 animate-in fade-in duration-300">
-            <div className="bg-white rounded-2xl border border-slate-150 p-6 sm:p-8 shadow-md text-left space-y-6">
-              
-              <div className="text-center space-y-1.5">
-                <div className="w-12 h-12 bg-sky-50 text-[#0EA5E9] rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <LogIn className="w-6 h-6" />
+          <div id="club-view" className="max-w-6xl mx-auto py-8 px-4 space-y-8 animate-in fade-in duration-300">
+            {/* Hero Header Banner */}
+            <div className="bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900 text-white rounded-3xl p-6 sm:p-10 shadow-xl border border-sky-800/40 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="relative z-10 space-y-3 max-w-2xl">
+                <span className="bg-sky-400/20 text-sky-300 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-sky-400/30">
+                  Kore Town Student & Developer Community
+                </span>
+                <h1 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight">
+                  IresoJ Digital Club <span className="text-[#0EA5E9]">& Tech Hub</span>
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+                  Join our local technology community in Kore Town! Access computer workshops, graphics design mentorship, software tutorials, and collaborate with fellow digital innovators.
+                </p>
+                <div className="pt-2 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => setActiveTab('login')}
+                    className="px-5 py-2.5 bg-[#0EA5E9] hover:bg-sky-400 text-slate-900 font-extrabold text-xs rounded-xl shadow-lg transition-all cursor-pointer"
+                  >
+                    Join Club & Create Account
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('services')}
+                    className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl transition-all cursor-pointer border border-white/20"
+                  >
+                    Explore Training Courses
+                  </button>
                 </div>
-                <h2 className="font-display font-extrabold text-slate-900 text-xl">
-                  Staff Portal Sign In
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Access administrative dashboard, catalog editors, and payment verification tools.
+              </div>
+            </div>
+
+            {/* Feature Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-3">
+                <div className="w-10 h-10 bg-sky-100 dark:bg-sky-950 text-[#0EA5E9] rounded-xl flex items-center justify-center font-bold">
+                  💻
+                </div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">Computer & IT Workshops</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Weekly practical sessions on MS Office, graphics design, photo editing, and software basics at Kore Town Center.
                 </p>
               </div>
 
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-3">
+                <div className="w-10 h-10 bg-amber-100 dark:bg-amber-950 text-amber-600 rounded-xl flex items-center justify-center font-bold">
+                  🎓
+                </div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">Digital Certificates</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Earn verified certificates of completion for computer training, document design, and office application skills.
+                </p>
+              </div>
+
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-3">
+                <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-950 text-emerald-600 rounded-xl flex items-center justify-center font-bold">
+                  🤝
+                </div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">Local Mentorship</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Direct guidance from experienced technicians at IresoJ Digital CSC for computer maintenance and graphic layout.
+                </p>
+              </div>
+            </div>
+
+            {/* Loyalty Leaderboard Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+              <LoyaltyLeaderboard />
+              
+              <div className="space-y-6">
+                <div className="bg-sky-950 dark:bg-slate-900 rounded-3xl border border-sky-800/40 dark:border-slate-800 p-8 shadow-xl text-white relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
+                  <div className="relative z-10 space-y-4">
+                    <div className="w-12 h-12 bg-sky-500/20 rounded-2xl flex items-center justify-center border border-sky-500/30">
+                      <Star className="w-6 h-6 text-sky-400" />
+                    </div>
+                    <h3 className="text-xl font-black tracking-tight">Become a Top Contributor</h3>
+                    <p className="text-xs text-sky-200/80 leading-relaxed font-medium">
+                      Join the IresoJ Digital Club and start engaging with the community. Top contributors get exclusive access to beta software, priority support, and invited to special developer meetups.
+                    </p>
+                    <div className="flex items-center gap-4 pt-2">
+                      <div className="flex -space-x-2">
+                        {[1,2,3,4].map(i => (
+                          <div key={i} className="w-8 h-8 rounded-full border-2 border-sky-900 bg-slate-800 flex items-center justify-center text-[10px] font-bold">
+                            {String.fromCharCode(64 + i)}
+                          </div>
+                        ))}
+                        <div className="w-8 h-8 rounded-full border-2 border-sky-900 bg-sky-500 flex items-center justify-center text-[10px] font-bold">
+                          +12
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-sky-300 font-black uppercase tracking-widest">Active Members</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
+                   <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-4 flex items-center gap-2">
+                     <Users className="w-4 h-4 text-sky-500" />
+                     Community Highlights
+                   </h4>
+                   <div className="space-y-4">
+                     <div className="flex gap-3">
+                       <div className="w-2 h-2 rounded-full bg-green-500 mt-1.5" />
+                       <div>
+                         <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Graphic Design Workshop</p>
+                         <p className="text-[10px] text-slate-500">Every Saturday @ 2:00 PM at IresoJ Hub.</p>
+                       </div>
+                     </div>
+                     <div className="flex gap-3">
+                       <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5" />
+                       <div>
+                         <p className="text-xs font-bold text-slate-800 dark:text-slate-200">Code Mentorship Program</p>
+                         <p className="text-[10px] text-slate-500">Free basics for local students this month.</p>
+                       </div>
+                     </div>
+                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      // 7. EARN (AFFILIATE, PROMOTION & COMMISSION HUB)
+      case 'durepay':
+        return (
+          <div id="earn-view" className="max-w-5xl mx-auto py-8 px-4 space-y-8 animate-in fade-in duration-300">
+            {/* Earn Banner Header */}
+            <div className="bg-gradient-to-br from-emerald-900 via-teal-950 to-slate-900 text-white rounded-3xl p-6 sm:p-10 shadow-xl border border-emerald-700/40 relative overflow-hidden">
+              <div className="space-y-3 max-w-2xl relative z-10">
+                <span className="bg-emerald-400/20 text-emerald-300 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border border-emerald-400/30">
+                  Affiliate & Commission Program (Galii Komishiinii)
+                </span>
+                <h1 className="font-display text-2xl sm:text-4xl font-extrabold tracking-tight">
+                  Earn Income With <span className="text-emerald-400">IresoJ Digital CSC</span>
+                </h1>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+                  Promote our digital products, airtime vouchers, graphics templates, and computer services. Earn up to 25% commission on every successful sale or booking made through your referral link!
+                </p>
+              </div>
+            </div>
+
+            {/* Interactive Affiliate Link Generator Card */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-md space-y-6">
+              <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+                <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center font-bold">
+                  💰
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-base">Generate Your Unique Referral Link</h3>
+                  <p className="text-xs text-slate-500">Select a product/service category and enter your Telebirr phone number to start earning.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Select Promotion Product / Service *
+                  </label>
+                  <select
+                    value={affiliateItem}
+                    onChange={(e) => setAffiliateItem(e.target.value)}
+                    className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
+                  >
+                    <option value="telecom_airtime">Ethio Telecom & Safaricom Airtime Cards (5% Commission)</option>
+                    <option value="design_templates">Graphics & Document Templates (20% Commission)</option>
+                    <option value="csc_services">Computer Maintenance & Printing Services (15% Commission)</option>
+                    <option value="digital_assets">Digital Assets & Software Downloads (25% Commission)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Your Telebirr / Phone Number *
+                  </label>
+                  <input
+                    type="text"
+                    value={affiliatePhone}
+                    onChange={(e) => setAffiliatePhone(e.target.value)}
+                    placeholder="e.g. 0995852194"
+                    className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
+                  />
+                </div>
+              </div>
+
+              {/* Generated Referral Link Box */}
+              <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 space-y-2">
+                <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Your Personal Referral URL:</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={`https://iresoj-csc.com/?ref=${affiliatePhone || '0995852194'}&item=${affiliateItem}`}
+                    className="w-full text-xs font-mono font-bold bg-white dark:bg-slate-900 px-3 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`https://iresoj-csc.com/?ref=${affiliatePhone || '0995852194'}&item=${affiliateItem}`);
+                      setAffiliateCopied(true);
+                      setTimeout(() => setAffiliateCopied(false), 2500);
+                    }}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shrink-0 transition-all cursor-pointer"
+                  >
+                    {affiliateCopied ? '✓ Copied!' : 'Copy Link'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Instant Social Share Buttons */}
+              <div className="pt-2 flex items-center gap-3">
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Share directly to:</span>
+                <a
+                  href={`https://t.me/share/url?url=${encodeURIComponent(`https://iresoj-csc.com/?ref=${affiliatePhone}`)}&text=${encodeURIComponent("Get top quality digital services and airtime cards at IresoJ Digital CSC Kore Town!")}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 bg-sky-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-sky-600 transition-all"
+                >
+                  <Send className="w-3.5 h-3.5" /> Telegram
+                </a>
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out IresoJ Digital CSC Kore Town: https://iresoj-csc.com/?ref=${affiliatePhone}`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-600 transition-all"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+        );
+
+      // REAL-TIME SUPPORT MESSAGES CHAT TAB
+      case 'messages':
+        return (
+          <SupportMessagesView 
+            userId={authState.user?.id || 'guest_user'}
+            userName={authState.user?.username || 'Valued Customer'}
+            userPhone={authState.user?.phone || ''}
+          />
+        );
+
+      // 8. USER SIGN IN / CREATE ACCOUNT & ADMIN LOGIN VIEW
+      case 'login':
+        return (
+          <div id="login-view" className="max-w-lg mx-auto py-8 px-4 animate-in fade-in duration-300">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-xl text-left space-y-6">
+              
+              {/* Header Title */}
+              <div className="text-center space-y-1.5">
+                <div className="w-12 h-12 bg-sky-50 dark:bg-sky-950 text-[#0EA5E9] rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-sm">
+                  {authTab === 'user' ? <User className="w-6 h-6" /> : <ShieldCheck className="w-6 h-6" />}
+                </div>
+                <h2 className="font-display font-black text-slate-900 dark:text-white text-2xl tracking-tight">
+                  {authTab === 'user' ? (userAuthMode === 'register' ? 'Create New User Account' : 'User Sign In') : 'Admin Portal Sign In'}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {authTab === 'user'
+                    ? 'Create an account to shop, track airtime card purchases, and earn commissions.'
+                    : 'Access administrative dashboard, catalog editors, and payment verification tools.'
+                  }
+                </p>
+              </div>
+
+              {/* Main Auth Switcher Tabs (User vs Admin) */}
+              <div className="flex bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl gap-1">
+                <button
+                  onClick={() => { setAuthTab('user'); setLoginError(''); setRegSuccessMsg(''); }}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    authTab === 'user'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  <User className="w-4 h-4 text-[#0EA5E9]" />
+                  <span>User Account</span>
+                </button>
+                <button
+                  onClick={() => { setAuthTab('admin'); setLoginError(''); setRegSuccessMsg(''); }}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    authTab === 'admin'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900'
+                  }`}
+                >
+                  <ShieldCheck className="w-4 h-4 text-amber-500" />
+                  <span>Admin Login</span>
+                </button>
+              </div>
+
+              {/* Alert Feedback Messages */}
               {loginError && (
-                <div className="bg-red-50 text-red-800 p-3 rounded-xl border border-red-200 text-xs font-semibold flex items-center space-x-1.5">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                <div className="bg-red-50 text-red-800 p-3.5 rounded-2xl border border-red-200 text-xs font-bold flex items-center space-x-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
                   <span>{loginError}</span>
                 </div>
               )}
 
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                    Staff Username *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. admin"
-                    value={loginUsername}
-                    onChange={(e) => setLoginUsername(e.target.value)}
-                    className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#0EA5E9] bg-slate-50"
-                  />
+              {regSuccessMsg && (
+                <div className="bg-emerald-50 text-emerald-900 p-3.5 rounded-2xl border border-emerald-200 text-xs font-extrabold flex items-center space-x-2 animate-bounce">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                  <span>{regSuccessMsg}</span>
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                    Security Password *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="e.g. admin123"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    className="w-full text-xs px-3.5 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-[#0EA5E9] bg-slate-50"
-                  />
-                  <div className="mt-2 text-[10px] text-slate-500 bg-indigo-50/80 p-2.5 rounded-lg border border-indigo-100 font-mono space-y-0.5">
-                    <p className="font-bold text-indigo-900">👑 Admin Sign-In Credentials:</p>
-                    <p>• Username/Email: <strong className="text-indigo-700">Jemal Fano</strong> or <strong className="text-indigo-700">jemalfan030@gmail.com</strong></p>
-                    <p>• Password: <strong className="text-indigo-700">Esb#2026</strong> (or <strong className="text-indigo-700">admin123</strong> / <strong className="text-indigo-700">admin</strong>)</p>
+              {/* TAB 1: USER ACCOUNT FORM (CREATE ACCOUNT OR SIGN IN) */}
+              {authTab === 'user' && (
+                <div className="space-y-4">
+                  {/* Mode Toggle (Create Account vs Sign In) */}
+                  <div className="flex border-b border-slate-100 dark:border-slate-800 pb-2 gap-4">
+                    <button
+                      onClick={() => { setUserAuthMode('register'); setLoginError(''); }}
+                      className={`text-xs font-extrabold pb-1.5 transition-colors ${
+                        userAuthMode === 'register'
+                          ? 'text-[#0EA5E9] border-b-2 border-[#0EA5E9]'
+                          : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      + Create Account (Account Haarawa)
+                    </button>
+                    <button
+                      onClick={() => { setUserAuthMode('signin'); setLoginError(''); }}
+                      className={`text-xs font-extrabold pb-1.5 transition-colors ${
+                        userAuthMode === 'signin'
+                          ? 'text-[#0EA5E9] border-b-2 border-[#0EA5E9]'
+                          : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                    >
+                      Sign In (Seenuu)
+                    </button>
                   </div>
-                </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-[#0EA5E9] hover:bg-sky-600 text-white py-2.5 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-lg shadow-sky-100 active:scale-[0.98] disabled:opacity-50"
-                >
-                  <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
-                </button>
-              </form>
+                  {userAuthMode === 'register' ? (
+                    /* CREATE NEW USER ACCOUNT FORM */
+                    <form onSubmit={handleUserRegisterSubmit} className="space-y-3.5">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                          Full Name (Maqaa Guutuu) *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Caalaa Firomsaa"
+                          value={regFullName}
+                          onChange={(e) => setRegFullName(e.target.value)}
+                          className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                          Email / Phone Number (Bilbila / Email) *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. 0995852194 or user@gmail.com"
+                          value={regEmailPhone}
+                          onChange={(e) => setRegEmailPhone(e.target.value)}
+                          className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                            Password *
+                          </label>
+                          <input
+                            type="password"
+                            required
+                            placeholder="••••••••"
+                            value={regPassword}
+                            onChange={(e) => setRegPassword(e.target.value)}
+                            className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                            Confirm Password *
+                          </label>
+                          <input
+                            type="password"
+                            required
+                            placeholder="••••••••"
+                            value={regConfirmPassword}
+                            onChange={(e) => setRegConfirmPassword(e.target.value)}
+                            className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-3 bg-[#0EA5E9] hover:bg-sky-400 text-slate-900 font-extrabold text-xs rounded-xl transition-all shadow-md cursor-pointer mt-2"
+                      >
+                        Create User Account Now
+                      </button>
+                    </form>
+                  ) : (
+                    /* USER SIGN IN FORM */
+                    <form onSubmit={handleUserSignInSubmit} className="space-y-3.5">
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                          Email / Phone Number *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. 0995852194 or user@gmail.com"
+                          value={regEmailPhone}
+                          onChange={(e) => setRegEmailPhone(e.target.value)}
+                          className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                          Password *
+                        </label>
+                        <input
+                          type="password"
+                          required
+                          placeholder="••••••••"
+                          value={regPassword}
+                          onChange={(e) => setRegPassword(e.target.value)}
+                          className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-3 bg-[#0EA5E9] hover:bg-sky-400 text-slate-900 font-extrabold text-xs rounded-xl transition-all shadow-md cursor-pointer mt-2"
+                      >
+                        Sign In To My Account
+                      </button>
+                    </form>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: ADMIN PORTAL SIGN IN FORM */}
+              {authTab === 'admin' && (
+                <form onSubmit={handleLoginSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                      Staff Username / Admin Email *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Jemal Fano or admin"
+                      value={loginUsername}
+                      onChange={(e) => setLoginUsername(e.target.value)}
+                      className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                      Security Password *
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="w-full text-xs px-3.5 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white font-bold"
+                    />
+                    <div className="mt-2.5 text-[10px] text-slate-600 dark:text-slate-300 bg-indigo-50 dark:bg-indigo-950/40 p-3 rounded-xl border border-indigo-100 dark:border-indigo-900 font-mono space-y-1">
+                      <p className="font-bold text-indigo-900 dark:text-indigo-300">👑 Admin Sign-In Credentials:</p>
+                      <p>• Username/Email: <strong className="text-indigo-700 dark:text-indigo-400">Jemal Fano</strong> or <strong className="text-indigo-700 dark:text-indigo-400">jemalfano030@gmail.com</strong></p>
+                      <p>• Password: <strong className="text-indigo-700 dark:text-indigo-400">Esb#2026</strong> (or <strong className="text-indigo-700 dark:text-indigo-400">admin123</strong> / <strong className="text-indigo-700 dark:text-indigo-400">admin</strong>)</p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-[#0EA5E9] hover:bg-sky-600 text-white py-3 rounded-xl font-bold text-xs flex items-center justify-center transition-all cursor-pointer shadow-lg shadow-sky-100 active:scale-[0.98] disabled:opacity-50"
+                  >
+                    <span>{loading ? 'Authenticating...' : 'Authenticate & Open Admin Dashboard'}</span>
+                  </button>
+                </form>
+              )}
 
             </div>
           </div>
@@ -2053,6 +2718,7 @@ const mobileTabs = [
                 { id: 'reports', label: 'Reports & Analytics' },
                 { id: 'commission', label: 'Commission Analytics' },
                 { id: 'users', label: 'Customer Book (CRM)' },
+                { id: 'messages', label: '💬 Real-Time Support Chat' },
                 { id: 'share', label: 'Communications & Inbox' },
                 { id: 'payroll', label: 'Staff Payroll' },
                 { id: 'assets', label: 'Digital Assets Store' },
@@ -2086,8 +2752,11 @@ const mobileTabs = [
                   onSetTab={(tab) => setAdminSubTab(tab)}
                   onUpdateProduct={handleUpdateProduct}
                   onRefresh={() => loadAdminData(authState.token || '')}
+                  onRestoreTransactions={(restored) => setTransactions(restored)}
                   lastUpdated={lastUpdatedTime}
                   isLoading={isAdminDataLoading}
+                  theme={theme}
+                  toggleTheme={toggleTheme}
                 />
               )}
               {adminSubTab === 'products' && (
@@ -2123,6 +2792,7 @@ const mobileTabs = [
                 <AdminReport 
                   transactions={transactions}
                   bookings={bookings}
+                  onRestoreTransactions={(restored) => setTransactions(restored)}
                 />
               )}
               {adminSubTab === 'commission' && (
@@ -2138,6 +2808,9 @@ const mobileTabs = [
                   feedback={feedback}
                   onRefresh={() => loadAdminData(authState.token!)}
                 />
+              )}
+              {adminSubTab === 'messages' && (
+                <AdminMessages />
               )}
               {adminSubTab === 'share' && (
                 <AdminShare 
@@ -2177,6 +2850,92 @@ const mobileTabs = [
           </div>
         );
 
+      // 10. PROFILE VIEW
+      case 'profile':
+        return (
+          <div id="profile-view" className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-300 py-8">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+              <div className="bg-gradient-to-r from-sky-600 to-indigo-700 h-32 relative">
+                <div className="absolute -bottom-12 left-8 w-24 h-24 bg-white dark:bg-slate-800 rounded-full border-4 border-white dark:border-slate-900 flex items-center justify-center shadow-lg">
+                  <User className="w-12 h-12 text-sky-600 dark:text-sky-400" />
+                </div>
+              </div>
+              <div className="pt-16 pb-8 px-8 space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl font-black text-slate-900 dark:text-white">{authState.user?.username}</h2>
+                    <p className="text-sm text-slate-500 font-medium">{authState.user?.email}</p>
+                  </div>
+                  <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 p-4 rounded-2xl flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-400 rounded-xl flex items-center justify-center text-slate-950">
+                      <Sparkles className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 block">Loyalty Points</span>
+                      <span className="text-xl font-black text-slate-900 dark:text-white">{authState.user?.loyaltyPoints || 0} PTS</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <div className="space-y-4">
+                    <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <BellRing className="w-4 h-4 text-sky-600" />
+                      Notification Settings
+                    </h3>
+                    <label className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                      <div className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          className="sr-only peer" 
+                          checked={authState.user?.emailNotifications || false}
+                          onChange={(e) => {
+                            const updatedUser = { ...authState.user!, emailNotifications: e.target.checked };
+                            setAuthState(prev => ({ ...prev, user: updatedUser }));
+                            localStorage.setItem('es_digital_user_profile', JSON.stringify(updatedUser));
+                          }}
+                        />
+                        <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-sky-600"></div>
+                      </div>
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Email Notifications (Price Drops & Updates)</span>
+                    </label>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-sky-500" />
+                      Support Messages
+                    </h3>
+                    <button 
+                      onClick={() => setActiveTab('messages')}
+                      className="w-full p-4 bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800/50 rounded-2xl flex items-center justify-between group hover:bg-sky-100 transition-all"
+                    >
+                      <div className="text-left">
+                        <span className="text-sm font-bold text-sky-900 dark:text-sky-300 block">My Messages</span>
+                        <span className="text-[10px] text-sky-600 dark:text-sky-500 font-medium">View conversation threads with staff</span>
+                      </div>
+                      <MessageSquare className="w-5 h-5 text-sky-400 group-hover:scale-110 transition-transform" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-emerald-600" />
+                      Redeem Points
+                    </h3>
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 rounded-2xl space-y-3">
+                      <p className="text-xs text-emerald-800 dark:text-emerald-400 font-medium">Redeem your loyalty points for discounts on your next computer service or digital product purchase!</p>
+                      <button className="w-full py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-emerald-700 transition-colors shadow-md">
+                        Redeem 100 Points for 50 ETB OFF
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
       default:
         return <div>View not implemented</div>;
     }
@@ -2207,8 +2966,35 @@ const mobileTabs = [
       <FloatingContact />
       <UpdateNotifier />
 
-      {/* Mobile Floating Bottom Navigation Bar (Matching Screenshot 1 & 2) */}
-      <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/50 dark:border-slate-800/80 shadow-[0_10px_30px_rgba(0,0,0,0.08)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] rounded-[24px] p-2 flex justify-around items-center">
+      {/* Global Sync Notification Overlay */}
+      <AnimatePresence>
+        {syncMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: 50, x: '-50%' }}
+            className="fixed bottom-24 left-1/2 z-[60] bg-slate-900 border border-slate-700 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 min-w-[300px]"
+          >
+            <div className="w-8 h-8 bg-sky-500/20 text-sky-400 rounded-full flex items-center justify-center shrink-0">
+              <RotateCcw className="w-4 h-4 animate-spin-slow" />
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest font-black">Local Redundancy Sync</p>
+              <p className="text-xs font-bold leading-tight">{syncMessage}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Support Chat Widget */}
+      <SupportChatWidget 
+        userId={authState.user?.id || 'guest_user'}
+        userName={authState.user?.username || 'Valued Customer'}
+        userPhone={authState.user?.phone || ''}
+      />
+
+      {/* YE-BUNA Mobile Floating Bottom Navigation Bar (Matching Screenshot) */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-md z-50 md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-stone-200/90 dark:border-slate-800 shadow-[0_10px_30px_rgba(0,0,0,0.12)] rounded-3xl p-1.5 flex justify-between items-center">
         {mobileTabs.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.targetTab;
@@ -2216,17 +3002,19 @@ const mobileTabs = [
             <button
               key={item.id}
               onClick={() => setActiveTab(item.targetTab)}
-              className="flex-1 py-2 px-1 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all relative cursor-pointer"
+              className={`flex-1 py-2 px-3 rounded-2xl flex flex-col items-center justify-center transition-all relative cursor-pointer ${
+                isActive ? 'text-indigo-600 dark:text-amber-400 font-bold' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 font-medium'
+              }`}
             >
               {isActive && (
                 <motion.div
                   layoutId="mobileActiveTabPill"
-                  className="absolute inset-0 bg-cyan-100/50 dark:bg-cyan-950/30 rounded-2xl z-0"
+                  className="absolute inset-0 bg-indigo-50 dark:bg-slate-800 rounded-2xl z-0"
                   transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 />
               )}
-              <Icon className={`w-5 h-5 relative z-10 transition-colors duration-200 ${isActive ? 'text-cyan-600 dark:text-cyan-400' : 'text-slate-400 dark:text-slate-500'}`} />
-              <span className={`text-[10px] uppercase tracking-wider relative z-10 transition-colors duration-200 ${isActive ? 'text-cyan-700 dark:text-cyan-400 font-black' : 'text-slate-500 dark:text-slate-400 font-bold'}`}>
+              <Icon className={`w-5 h-5 relative z-10 transition-colors ${isActive ? 'text-indigo-600 dark:text-amber-400' : 'text-slate-500'}`} />
+              <span className={`text-[11px] relative z-10 capitalize mt-0.5 ${isActive ? 'text-indigo-600 dark:text-amber-400 font-bold' : 'text-slate-600 dark:text-slate-400'}`}>
                 {item.label}
               </span>
             </button>
@@ -2252,6 +3040,44 @@ const mobileTabs = [
           />
         )}
       </AnimatePresence>
+
+      {/* Price Drop Notifications Stack */}
+      <div className="fixed top-24 right-6 z-[60] flex flex-col gap-3 pointer-events-none w-full max-w-sm">
+        <AnimatePresence>
+          {priceDropAlerts.map((alert, idx) => (
+            <motion.div
+              key={`${alert.productId}-${idx}`}
+              initial={{ opacity: 0, x: 50, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 20, scale: 0.95 }}
+              className="pointer-events-auto bg-white dark:bg-slate-900 border-l-4 border-amber-400 p-4 rounded-2xl shadow-2xl flex items-start gap-4"
+            >
+              <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                <BellRing className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-grow">
+                <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">
+                  Price Drop Detected!
+                </h4>
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-300 mt-0.5 line-clamp-1">
+                  {alert.productTitle}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs text-slate-400 line-through">{formatETB(alert.oldPrice)}</span>
+                  <ArrowRight className="w-3 h-3 text-slate-300" />
+                  <span className="text-sm font-black text-[#0EA5E9]">{formatETB(alert.newPrice)}</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setPriceDropAlerts(prev => prev.filter((_, i) => i !== idx))}
+                className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
 
       {/* Service Appointment Booking Modal */}
       <AnimatePresence>

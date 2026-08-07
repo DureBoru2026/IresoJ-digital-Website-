@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import multer from 'multer';
 import { createServer as createViteServer } from 'vite';
-import { db, ProductService, Announcement, Feedback, Transaction, Booking } from '../db-store.js';
+import { db, ProductService, Announcement, Feedback, Transaction, Booking } from './db-store.js';
 
 // Simple middleware to simulate admin authentication
 const ADMIN_TOKEN = 'es-digital-csc-admin-secret-session-token';
@@ -741,10 +741,6 @@ async function startServer() {
     }
 
     try {
-      // In production, you would call a gateway provider here, e.g.:
-      // const gatewayUrl = `https://api.sms-provider.com/send?to=${encodeURIComponent(phone)}&msg=${encodeURIComponent(message)}`;
-      // await fetch(gatewayUrl, { headers: { 'Authorization': `Bearer ${process.env.SMS_API_KEY}` } });
-      
       console.log('---------------------------------------------------------');
       console.log(`[SMS GATEWAY DISPATCH]`);
       console.log(`Recipient Name : ${customerName || 'Valued Customer'}`);
@@ -854,29 +850,17 @@ async function startServer() {
   app.post('/api/admin/broadcast', authenticateAdmin, async (req: Request, res: Response) => {
     const { subject, message } = req.body;
     try {
-      const transactions = await db.getTransactions();
       const feedback = await db.getFeedback();
-      
       const emails = new Set<string>();
-      
-      // Collect emails from transactions (if any)
-      transactions.forEach(t => {
-        // Transactions don't have email in this schema, but we can check if they are in feedback
-      });
-
-      // Collect emails from feedback
       feedback.forEach(f => {
         if (f.email) emails.add(f.email.toLowerCase());
       });
 
       console.log(`[BROADCAST] Subject: ${subject}`);
-      console.log(`[BROADCAST] Content: ${message}`);
       console.log(`[BROADCAST] Recipients (${emails.size}): ${Array.from(emails).join(', ')}`);
 
-      // Simulate delay
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Save to history
       const broadcasts = await db.getBroadcasts();
       broadcasts.unshift({
         id: `bc_${Date.now()}`,
@@ -913,30 +897,20 @@ async function startServer() {
       const phones = new Set<string>();
 
       transactions.forEach(t => {
-        if (t && t.customerPhone && t.customerPhone.trim()) {
-          phones.add(t.customerPhone.trim());
-        }
+        if (t && t.customerPhone && t.customerPhone.trim()) phones.add(t.customerPhone.trim());
       });
 
       bookings.forEach(b => {
-        if (b && b.customerPhone && b.customerPhone.trim()) {
-          phones.add(b.customerPhone.trim());
-        }
+        if (b && b.customerPhone && b.customerPhone.trim()) phones.add(b.customerPhone.trim());
       });
 
       feedback.forEach(f => {
-        if (f && f.phone && f.phone.trim()) {
-          phones.add(f.phone.trim());
-        }
+        if (f && f.phone && f.phone.trim()) phones.add(f.phone.trim());
       });
 
       const recipientList = Array.from(phones);
 
-      console.log(`[SMS BROADCAST] Sender ID: ${senderId || 'ES_DIGITAL'}`);
       console.log(`[SMS BROADCAST] Message: ${message}`);
-      console.log(`[SMS BROADCAST] Recipients (${recipientList.length}): ${recipientList.join(', ')}`);
-
-      // Simulate network SMS gateway latency
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       const smsBroadcasts = await db.getSmsBroadcasts();
@@ -952,9 +926,8 @@ async function startServer() {
       await db.saveSmsBroadcasts(smsBroadcasts.slice(0, 100));
 
       res.json({ success: true, count: recipientList.length, recipients: recipientList });
-      await logAction('SMS Broadcast Sent', `Sender: ${senderId || 'ES_DIGITAL'}. Recipients: ${recipientList.length}`, 'info', req);
+      await logAction('SMS Broadcast Sent', `Recipients: ${recipientList.length}`, 'info', req);
     } catch (err) {
-      console.error('SMS Broadcast failed:', err);
       res.status(500).json({ error: 'SMS Broadcast failed' });
     }
   });
@@ -971,7 +944,6 @@ async function startServer() {
   // Consolidated Admin Data Fetch
   app.get('/api/admin/all-data', authenticateAdmin, async (req: Request, res: Response) => {
     try {
-      console.log('[ADMIN] Fetching all datasets for dashboard...');
       const [feedback, transactions, users, bookings] = await Promise.all([
         db.getFeedback(),
         db.getTransactions(),
@@ -980,12 +952,11 @@ async function startServer() {
       ]);
       res.json({ feedback, transactions, users, bookings });
     } catch (err: any) {
-      console.error('All-data fetch error:', err);
       res.status(500).json({ error: 'Failed to fetch administrative data', details: err.message });
     }
   });
 
-  // Assets Management (Public/Admin)
+  // Assets Management
   app.get('/api/assets', async (req: Request, res: Response) => {
     try {
       const assets = await db.getAssets();
@@ -998,15 +969,10 @@ async function startServer() {
   app.post('/api/assets', authenticateAdmin, async (req: Request, res: Response) => {
     try {
       const assets = await db.getAssets();
-      const newAsset = {
-        ...req.body,
-        id: `asset-${Date.now()}`,
-        date: new Date().toISOString(),
-        downloadCount: 0
-      };
+      const newAsset = { ...req.body, id: `asset-${Date.now()}`, date: new Date().toISOString(), downloadCount: 0 };
       assets.push(newAsset);
       await db.saveAssets(assets);
-      await logAction('Asset Created', `Added new digital asset: ${newAsset.title}`, 'info', req);
+      await logAction('Asset Created', `Added asset: ${newAsset.title}`, 'info', req);
       res.status(201).json(newAsset);
     } catch (err) {
       res.status(500).json({ error: 'Failed to create asset' });
@@ -1019,7 +985,6 @@ async function startServer() {
       const assets = await db.getAssets();
       const filtered = assets.filter(a => a.id !== id);
       await db.saveAssets(filtered);
-      await logAction('Asset Deleted', `Deleted digital asset ID: ${id}`, 'warning', req);
       res.status(204).send();
     } catch (err) {
       res.status(500).json({ error: 'Failed to delete asset' });
@@ -1031,83 +996,42 @@ async function startServer() {
       const { id } = req.params;
       const assets = await db.getAssets();
       const index = assets.findIndex(a => a.id === id);
-      if (index === -1) {
+      if (index !== -1) {
+        assets[index].downloadCount++;
+        await db.saveAssets(assets);
+        res.json({ success: true, url: assets[index].fileUrl });
+      } else {
         res.status(404).json({ error: 'Asset not found' });
-        return;
       }
-      
-      assets[index].downloadCount++;
-      await db.saveAssets(assets);
-      res.json({ success: true, url: assets[index].fileUrl });
     } catch (err) {
       res.status(500).json({ error: 'Failed to record download' });
     }
   });
 
-  // Security Logs (Admin Only)
+  // Security Logs
   app.get('/api/admin/logs', authenticateAdmin, async (req: Request, res: Response) => {
     try {
-      const logs = await db.getLogs();
-      res.json(logs);
+      res.json(await db.getLogs());
     } catch (err) {
       res.status(500).json({ error: 'Failed to fetch logs' });
     }
   });
 
-  // Automated Weekly Database Backup & Instant Email Dispatch (Admin Only)
+  // Backup
   app.post('/api/admin/backup-email', authenticateAdmin, async (req: Request, res: Response) => {
     try {
-      const users = await db.getUsers();
-      const products = await db.getProducts();
-      const transactions = await db.getTransactions();
-      const bookings = await db.getBookings();
-      const assets = await db.getAssets();
-      const feedback = await db.getFeedback();
-      const broadcasts = await db.getBroadcasts();
-      const logs = await db.getLogs();
-
+      const [users, products, transactions, bookings, assets, feedback, broadcasts, logs] = await Promise.all([
+        db.getUsers(), db.getProducts(), db.getTransactions(), db.getBookings(), db.getAssets(), db.getFeedback(), db.getBroadcasts(), db.getLogs()
+      ]);
       const backupData = {
-        meta: {
-          system: 'ES Digital Computer Services Data Vault',
-          backupType: req.body?.isAutomated ? 'Automated Weekly Email Backup' : 'Instant Admin Triggered Backup',
-          timestamp: new Date().toISOString(),
-          recipient: 'jemalfan030@gmail.com',
-          totalCollections: 8,
-        },
-        data: {
-          usersCount: users.length,
-          products,
-          transactions,
-          bookings,
-          assets,
-          feedbackCount: feedback.length,
-          broadcastsCount: broadcasts.length,
-          logsCount: logs.length
-        }
+        meta: { system: 'ES Digital CSC Vault', timestamp: new Date().toISOString() },
+        data: { usersCount: users.length, products, transactions, bookings, assets, feedbackCount: feedback.length, logsCount: logs.length }
       };
-
-      const jsonStr = JSON.stringify(backupData, null, 2);
-      const backupSizeBytes = Buffer.byteLength(jsonStr, 'utf8');
-      const backupSizeKb = (backupSizeBytes / 1024).toFixed(2);
-
-      await logAction(
-        'Database Email Backup', 
-        `Full database snapshot (${backupSizeKb} KB) sent to jemalfan030@gmail.com [Status: Success]`, 
-        'info', 
-        req
-      );
-
-      res.json({
-        success: true,
-        recipientEmail: 'jemalfan030@gmail.com',
-        backupSizeBytes: backupSizeBytes,
-        backupSizeKb: `${backupSizeKb} KB`,
-        timestamp: backupData.meta.timestamp,
-        backupType: backupData.meta.backupType,
-        message: `Database backup email successfully sent to jemalfan030@gmail.com. Snapshot size: ${backupSizeKb} KB.`
-      });
+      const jsonStr = JSON.stringify(backupData);
+      await logAction('Database Backup', `Snapshot sent to admin (${(Buffer.byteLength(jsonStr) / 1024).toFixed(2)} KB)`, 'info', req);
+      res.json({ success: true, timestamp: backupData.meta.timestamp });
     } catch (err) {
-      res.status(500).json({ error: 'Failed to compile database backup' });
+      res.status(500).json({ error: 'Backup failed' });
     }
   });
 
@@ -1116,21 +1040,11 @@ async function startServer() {
     const { query } = req.params;
     try {
       const bookings = await db.getBookings();
-      const match = bookings.find(b => 
-        b.id.toLowerCase() === query.toLowerCase() || 
-        b.customerPhone.replace(/\D/g, '') === query.replace(/\D/g, '')
-      );
-      
+      const match = bookings.find(b => b.id.toLowerCase() === query.toLowerCase() || b.customerPhone.replace(/\D/g, '') === query.replace(/\D/g, ''));
       if (match) {
-        res.json({
-          id: match.id,
-          status: match.status,
-          serviceTitle: match.serviceTitle,
-          bookingDate: match.bookingDate,
-          paymentStatus: match.paymentStatus
-        });
+        res.json({ id: match.id, status: match.status, serviceTitle: match.serviceTitle, bookingDate: match.bookingDate, paymentStatus: match.paymentStatus });
       } else {
-        res.status(404).json({ error: 'No service found for this ID or Phone Number' });
+        res.status(404).json({ error: 'No service found' });
       }
     } catch (err) {
       res.status(500).json({ error: 'Tracking service error' });
@@ -1157,41 +1071,13 @@ async function startServer() {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on http://0.0.0.0:${PORT} (Express + Vite)`);
 
-    // Automated Weekly Database Backup Schedule (Runs every 7 days = 604,800,000 ms)
     const WEEKLY_MS = 7 * 24 * 60 * 60 * 1000;
     setInterval(async () => {
       try {
-        console.log('⏰ Running Automated Weekly Database Backup Task...');
-        const products = await db.getProducts();
-        const transactions = await db.getTransactions();
-        const bookings = await db.getBookings();
-        const assets = await db.getAssets();
-
-        const autoBackupPayload = {
-          schedule: 'Weekly Cron',
-          timestamp: new Date().toISOString(),
-          recipient: 'jemalfan030@gmail.com',
-          counts: {
-            products: products.length,
-            transactions: transactions.length,
-            bookings: bookings.length,
-            assets: assets.length
-          }
-        };
-
-        const jsonStr = JSON.stringify(autoBackupPayload);
-        await db.saveLogs([
-          {
-            id: `log_autobackup_${Date.now()}`,
-            adminUser: 'System Scheduler',
-            action: 'Automated Weekly Email Backup Executed',
-            details: `Weekly JSON backup dispatched to jemalfan030@gmail.com (${Buffer.byteLength(jsonStr)} bytes)`,
-            timestamp: new Date().toISOString(),
-            severity: 'info'
-          },
-          ...(await db.getLogs())
-        ]);
-        console.log('✅ Automated Weekly Database Backup completed and logged.');
+        console.log('⏰ Running Automated Weekly Database Backup...');
+        const [products, transactions, bookings, assets] = await Promise.all([db.getProducts(), db.getTransactions(), db.getBookings(), db.getAssets()]);
+        const jsonStr = JSON.stringify({ timestamp: new Date().toISOString(), counts: { products: products.length, transactions: transactions.length, bookings: bookings.length, assets: assets.length } });
+        await db.saveLogs([{ id: `log_autobackup_${Date.now()}`, adminUser: 'System Scheduler', action: 'Weekly Backup Executed', details: `Size: ${Buffer.byteLength(jsonStr)} bytes`, timestamp: new Date().toISOString(), severity: 'info' }, ...(await db.getLogs())]);
       } catch (err) {
         console.error('Failed automated weekly backup:', err);
       }

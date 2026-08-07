@@ -71,9 +71,14 @@ export interface AuthState {
   isAuthenticated: boolean;
   token: string | null;
   user: {
+    id?: string;
     username: string;
     email: string;
     role: string;
+    phone?: string;
+    loyaltyPoints?: number;
+    emailNotifications?: boolean;
+    avatar?: string;
   } | null;
 }
 
@@ -134,5 +139,24 @@ export interface PayrollRecord {
   notes?: string;
 }
 
-export type ActiveTab = 'home' | 'about' | 'services' | 'news' | 'contact' | 'login' | 'admin' | 'digital-store' | 'agriculture' | 'academy' | 'marketplace' | 'wishlist' | 'community' | 'durepay' | 'cart';
-export type AdminSubTab = 'dashboard' | 'products' | 'payments' | 'bookings' | 'history' | 'users' | 'share' | 'reports' | 'assets' | 'logs' | 'commission' | 'payroll';
+export interface SupportMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderPhone?: string;
+  senderRole: 'user' | 'staff';
+  message: string;
+  reply?: string;
+  date: string;
+  status: 'unread' | 'read' | 'replied';
+  productId?: string;
+  productTitle?: string;
+}
+
+export interface WatchedProduct {
+  productId: string;
+  lastSeenPrice: number;
+}
+
+export type ActiveTab = 'home' | 'about' | 'services' | 'news' | 'contact' | 'login' | 'admin' | 'digital-store' | 'agriculture' | 'academy' | 'marketplace' | 'wishlist' | 'community' | 'durepay' | 'cart' | 'messages' | 'profile';
+export type AdminSubTab = 'dashboard' | 'products' | 'payments' | 'bookings' | 'history' | 'users' | 'share' | 'reports' | 'assets' | 'logs' | 'commission' | 'payroll' | 'messages';

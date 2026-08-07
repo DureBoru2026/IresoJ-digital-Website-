@@ -1,6 +1,6 @@
 {
-  "name": "IresoJ Digital CSC Computer Services",
-  "description": "Digital hub for IresoJ Digital CSC in Kore Town, Ethiopia. Features digital computer repair services, product catalog, announcements, and telebirr/CBE Birr payment tracking.",
+  "name": "IresoJ Digital Website",
+  "description": "Digital platform for IresoJ Digital Computer Services in Kore Town, Ethiopia. Features computer repair appointments, tech products, digital publishing, and Telebirr/CBE Birr payments.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

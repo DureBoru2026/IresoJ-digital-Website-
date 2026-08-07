@@ -17,9 +17,11 @@ import {
   Check,
   Send,
   CalendarCheck,
-  DollarSign
+  DollarSign,
+  CalendarPlus
 } from 'lucide-react';
 import { formatETB } from '../utils';
+import { downloadICal } from '../utils/calendar';
 
 export interface RepairTaskOption {
   id: string;
@@ -30,6 +32,7 @@ export interface RepairTaskOption {
   maxPrice: number;
   description: string;
   estimatedDuration: string;
+  tooltip?: string;
 }
 
 const COMMON_REPAIR_TASKS: RepairTaskOption[] = [
@@ -41,7 +44,8 @@ const COMMON_REPAIR_TASKS: RepairTaskOption[] = [
     minPrice: 3500,
     maxPrice: 6500,
     description: 'Original HD/FHD screen panel replacement with 3-month warranty.',
-    estimatedDuration: '1 - 2 Hours'
+    estimatedDuration: '1 - 2 Hours',
+    tooltip: 'We use genuine A-grade replacement panels. This service includes full testing for dead pixels and color accuracy.'
   },
   {
     id: 'os_install',
@@ -51,7 +55,8 @@ const COMMON_REPAIR_TASKS: RepairTaskOption[] = [
     minPrice: 500,
     maxPrice: 1200,
     description: 'Clean Windows 11/10 installation, official drivers, antivirus, and office software.',
-    estimatedDuration: '45 Mins'
+    estimatedDuration: '45 Mins',
+    tooltip: 'A fresh installation that removes all bloatware and viruses. We optimize the registry and startup items for peak performance.'
   },
   {
     id: 'diagnostic_check',
@@ -61,7 +66,8 @@ const COMMON_REPAIR_TASKS: RepairTaskOption[] = [
     minPrice: 300,
     maxPrice: 800,
     description: 'Full electrical and chip-level inspection for no-power or overheating issues.',
-    estimatedDuration: '30 Mins'
+    estimatedDuration: '30 Mins',
+    tooltip: 'Using professional diagnostic cards and multimeters, we trace power rails and check for short circuits at the component level.'
   },
   {
     id: 'battery_replacement',
@@ -71,7 +77,8 @@ const COMMON_REPAIR_TASKS: RepairTaskOption[] = [
     minPrice: 1800,
     maxPrice: 3200,
     description: 'Brand new high-capacity internal or external battery with charger calibration.',
-    estimatedDuration: '20 Mins'
+    estimatedDuration: '20 Mins',
+    tooltip: 'Replacement of lithium cells with high-quality alternatives that meet or exceed original capacity specifications.'
   },
   {
     id: 'keyboard_repair',
@@ -81,7 +88,8 @@ const COMMON_REPAIR_TASKS: RepairTaskOption[] = [
     minPrice: 700,
     maxPrice: 1400,
     description: 'Key replacement or full keyboard assembly refresh with dust extraction.',
-    estimatedDuration: '45 Mins'
+    estimatedDuration: '45 Mins',
+    tooltip: 'Includes ultrasonic cleaning of keycaps and replacement of individual faulty switches or the entire membrane assembly.'
   },
   {
     id: 'printer_maintenance',
@@ -91,7 +99,8 @@ const COMMON_REPAIR_TASKS: RepairTaskOption[] = [
     minPrice: 800,
     maxPrice: 1600,
     description: 'Inkjet/LaserJet head alignment, roller cleaning, and eco-tank ink refilling.',
-    estimatedDuration: '1 Hour'
+    estimatedDuration: '1 Hour',
+    tooltip: 'Specialized solvent cleaning for clogged print heads and professional calibration for color matching.'
   },
   {
     id: 'graphics_layout',
@@ -101,7 +110,8 @@ const COMMON_REPAIR_TASKS: RepairTaskOption[] = [
     minPrice: 400,
     maxPrice: 1200,
     description: 'Professional layout design for brochures, business booklets, and ID cards.',
-    estimatedDuration: 'Same Day'
+    estimatedDuration: 'Same Day',
+    tooltip: 'High-resolution graphic design tailored for CMYK printing, ensuring no bleeding or pixelation in final outputs.'
   },
   {
     id: 'data_recovery',
@@ -111,7 +121,8 @@ const COMMON_REPAIR_TASKS: RepairTaskOption[] = [
     minPrice: 1000,
     maxPrice: 2500,
     description: 'Deep sector scanning for corrupted hard drives, USB flash drives, or deleted files.',
-    estimatedDuration: '2 - 4 Hours'
+    estimatedDuration: '2 - 4 Hours',
+    tooltip: 'We use non-destructive cloning tools to recover data from failing drives before performing deep sector analysis.'
   },
   {
     id: 'it_training',
@@ -121,7 +132,8 @@ const COMMON_REPAIR_TASKS: RepairTaskOption[] = [
     minPrice: 1500,
     maxPrice: 2800,
     description: 'Practical 2-week hands-on coaching on OS navigation, Word, Excel, and Web safety.',
-    estimatedDuration: '2 Weeks'
+    estimatedDuration: '2 Weeks',
+    tooltip: 'Personalized 1-on-1 sessions focusing on practical skills needed for modern office environments and digital literacy.'
   }
 ];
 
@@ -334,7 +346,29 @@ export default function ServiceCostEstimator({ onBookingSubmitted }: ServiceCost
               </div>
             </div>
 
-            <div className="flex justify-center gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row justify-center gap-3 pt-2">
+              <button
+                onClick={() => {
+                  const [year, month, day] = bookingSuccess.bookingDate.split('-').map(Number);
+                  const [hours, minutes] = bookingSuccess.bookingTime.replace(/(AM|PM)/, '').split(':').map(Number);
+                  const isPM = bookingSuccess.bookingTime.includes('PM');
+                  const finalHours = isPM && hours < 12 ? hours + 12 : (!isPM && hours === 12 ? 0 : hours);
+                  
+                  const startDate = new Date(year, month - 1, day, finalHours, minutes);
+
+                  downloadICal({
+                    title: `Repair: ${bookingSuccess.serviceTitle || bookingSuccess.tasks}`,
+                    description: `Booking for ${bookingSuccess.customerName}. Estimated Price: ${bookingSuccess.estimatedPrice}`,
+                    location: 'IresoJ Digital CSC, Kore Town, Ethiopia',
+                    startDate: startDate.toISOString(),
+                  });
+                }}
+                className="px-6 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-bold text-xs cursor-pointer shadow-sm hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+              >
+                <CalendarPlus className="w-4 h-4 text-[#0EA5E9]" />
+                <span>Add to Calendar (.ics)</span>
+              </button>
+
               <button
                 onClick={() => {
                   setBookingSuccess(null);
@@ -375,9 +409,19 @@ export default function ServiceCostEstimator({ onBookingSubmitted }: ServiceCost
                         </div>
                       </div>
 
-                      <h4 className="font-extrabold text-slate-900 text-sm leading-snug">
-                        {task.name}
-                      </h4>
+                      <div className="flex items-center gap-1.5">
+                        <h4 className="font-extrabold text-slate-900 text-sm leading-snug">
+                          {task.name}
+                        </h4>
+                        <div className="group/tooltip relative">
+                          <Info className="w-3.5 h-3.5 text-slate-300 hover:text-sky-500 transition-colors" />
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900 text-white text-[10px] font-medium rounded-lg shadow-xl pointer-events-none opacity-0 group-hover/tooltip:opacity-100 transition-opacity z-20">
+                            {task.tooltip}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+                          </div>
+                        </div>
+                      </div>
+
                       <p className="text-[11px] text-slate-500 leading-relaxed">
                         {task.description}
                       </p>

@@ -86,16 +86,35 @@
     },
     "user": {
       "title": "User",
-      "description": "Admin or staff user account",
+      "description": "User account for staff, admins, and club members",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
         "email": { "type": "string" },
         "username": { "type": "string" },
         "passwordHash": { "type": "string" },
-        "role": { "type": "string" }
+        "role": { "type": "string" },
+        "loyaltyPoints": { "type": "number", "description": "Accumulated reward points for club activities" },
+        "avatar": { "type": "string", "description": "URL to user's profile picture" }
       },
-      "required": ["id", "email", "username", "passwordHash", "role"]
+      "required": ["id", "email", "username", "role"]
+    },
+    "supportMessage": {
+      "title": "SupportMessage",
+      "description": "Real-time customer support chat message for IresoJ staff",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderPhone": { "type": "string" },
+        "senderRole": { "type": "string" },
+        "message": { "type": "string" },
+        "reply": { "type": "string" },
+        "date": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["id", "senderId", "senderName", "senderRole", "message", "date", "status"]
     }
   },
   "firestore": {
@@ -122,6 +141,10 @@
     "/users/{userId}": {
       "schema": "user",
       "description": "Collection of user accounts"
+    },
+    "/support_messages/{messageId}": {
+      "schema": "supportMessage",
+      "description": "Collection of real-time support chat messages"
     }
   }
 }

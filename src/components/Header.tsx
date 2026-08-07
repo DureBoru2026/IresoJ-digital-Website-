@@ -9,12 +9,10 @@ import {
   Globe, 
   Search, 
   Home, 
-  Sprout, 
-  GraduationCap, 
   ShoppingBag, 
-  Heart, 
   Users, 
-  Wallet, 
+  DollarSign,
+  Phone,
   Info,
   Facebook,
   Send,
@@ -23,7 +21,11 @@ import {
   Sun,
   Moon,
   BookOpen,
-  ShoppingCart
+  ShoppingCart,
+  User,
+  UserPlus,
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ActiveTab, AuthState } from '../types';
@@ -47,12 +49,14 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
   const [drawerSearch, setDrawerSearch] = useState('');
 
   const navItems = [
-    { id: 'home', label: t('home'), icon: Home },
+    { id: 'home', label: 'Home', icon: Home },
     { id: 'about', label: t('aboutUs'), icon: Info },
-    { id: 'services', label: t('services'), icon: Laptop },
-    { id: 'digital-store', label: t('digitalStore'), icon: ShoppingBag },
-    { id: 'news', label: t('news'), icon: Globe },
-    { id: 'contact', label: t('contact'), icon: Users },
+    { id: 'services', label: 'Services & Products', icon: Laptop },
+    { id: 'digital-store', label: 'Digital Store', icon: ShoppingBag },
+    { id: 'messages', label: 'My Messages', icon: MessageSquare },
+    ...(authState.isAuthenticated ? [{ id: 'profile', label: 'My Profile', icon: User }] : []),
+    { id: 'news', label: 'Announcements', icon: Globe },
+    { id: 'contact', label: 'Contact Us', icon: Phone },
   ] as const;
 
   const navigateTo = (tab: ActiveTab) => {
@@ -61,26 +65,49 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
   };
 
   return (
-    <header id="app-header" className={`sticky top-0 z-40 ${layoutTheme.bgClass} border-b shadow-md transition-all duration-300`}>
+    <header id="app-header" className="sticky top-0 z-40 bg-[#FAF8F5] dark:bg-slate-900 border-b border-stone-200/70 dark:border-slate-800 shadow-xs transition-all duration-300">
+      
+      {/* Thick Black Navigation Ticker Header Banner */}
+      <div id="top-nav-ticker" className="bg-slate-950 text-amber-300 border-b border-amber-500/40 py-2 px-4 text-xs sm:text-sm font-black uppercase tracking-wider shadow-md">
+        <div className="max-w-7xl mx-auto flex items-center justify-center space-x-3 sm:space-x-6 min-w-max text-center overflow-x-auto">
+          <span className="flex items-center gap-1.5 text-white font-black">
+            <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
+            Content Rewards
+          </span>
+          <span className="text-amber-500 font-black">•</span>
+          <span className="text-amber-300 font-black">Instant Payouts</span>
+          <span className="text-amber-500 font-black">•</span>
+          <span className="text-white font-black">Book Sales</span>
+          <span className="text-amber-500 font-black">•</span>
+          <span className="text-amber-300 font-black">Digital Products</span>
+          <span className="text-amber-500 font-black">•</span>
+          <span className="text-emerald-400 font-black">Services & Telebirr</span>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
          <div className="flex justify-between items-center h-20">
           
-          {/* Logo Brand Section */}
+          {/* Logo Brand Section with IJ + Market Icon */}
           <div 
             id="brand-logo" 
             className="flex items-center space-x-3 cursor-pointer group shrink-0"
             onClick={() => navigateTo('home')}
           >
-            <div className="w-11 h-11 bg-[#0EA5E9] rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-all duration-300">
-              <Laptop className="w-5.5 h-5.5" />
+            {/* Logo IJ with Market Icon Badge */}
+            <div className="relative w-11 h-11 bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 rounded-2xl flex items-center justify-center text-slate-950 font-black shadow-md border-2 border-amber-300 group-hover:scale-105 transition-all duration-300 shrink-0">
+              <span className="font-mono text-lg font-black tracking-tighter">IJ</span>
+              <div className="absolute -bottom-1 -right-1 bg-slate-950 border border-amber-400 text-amber-400 p-0.5 rounded-md shadow-xs">
+                <ShoppingBag className="w-3 h-3 stroke-[2.5]" />
+              </div>
             </div>
+
             <div>
-              <span className="font-display text-xl font-black tracking-tight text-[#0EA5E9] flex items-center gap-1.5 transition-colors">
-                <Search className="w-4.5 h-4.5 text-white shrink-0 animate-pulse" />
-                IresoJ Digital <span className="text-white">CSC</span>
+              <span className="font-display text-lg sm:text-xl font-black uppercase tracking-wider text-amber-500 dark:text-amber-400 flex items-center gap-1.5 transition-colors drop-shadow-xs">
+                IRESO-J DIGITAL-WEBSITE
               </span>
-              <span className="block text-[10px] font-mono text-cyan-200 uppercase tracking-widest font-black transition-colors">
-                IresoJ Digital CSC Computer Services
+              <span className="block text-[9.5px] font-mono text-slate-600 dark:text-slate-300 uppercase tracking-widest font-black transition-colors">
+                Customer Services & IT Solution Center (CSC)
               </span>
             </div>
           </div>
@@ -95,15 +122,15 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
                   onClick={() => navigateTo(item.id as ActiveTab)}
                   className={`relative px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-200 ${
                     isActive 
-                      ? 'bg-white/10 text-[#0EA5E9] shadow-xs border border-white/5' 
-                      : 'text-slate-100 hover:text-[#0EA5E9] hover:bg-white/5'
+                      ? 'bg-slate-900 text-white dark:bg-amber-400 dark:text-slate-950 shadow-xs' 
+                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 hover:bg-stone-200/50 dark:hover:bg-slate-800'
                   }`}
                 >
                   {item.label}
                   {isActive && (
                     <motion.div 
                       layoutId="activeTabUnderline"
-                      className="absolute bottom-0 left-4 right-4 h-0.5 bg-[#0EA5E9] rounded-full"
+                      className="absolute bottom-0 left-4 right-4 h-0.5 bg-amber-500 rounded-full"
                       transition={{ type: "spring", stiffness: 380, damping: 30 }}
                     />
                   )}
@@ -113,14 +140,14 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
           </nav>
 
           {/* User Auth Buttons, Theme Toggle & Language Bar */}
-          <div className="hidden md:flex items-center space-x-3 bg-white/10 border border-white/10 rounded-2xl p-1.5 px-3">
+          <div className="hidden md:flex items-center space-x-2.5 bg-stone-100 dark:bg-slate-800/90 border border-stone-200 dark:border-slate-700/80 rounded-2xl p-1.5 px-3 shadow-xs">
             
             {/* Global Theme Toggle Button */}
             {toggleTheme && (
               <button
                 onClick={toggleTheme}
                 title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                className="p-1.5 rounded-xl text-slate-100 hover:bg-white/10 transition-all flex items-center gap-1.5 text-xs font-bold"
+                className="p-1.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-stone-200 dark:hover:bg-slate-700 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
               >
                 {theme === 'dark' ? (
                   <>
@@ -129,32 +156,47 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
                   </>
                 ) : (
                   <>
-                    <Moon className="w-4 h-4 text-slate-200" />
-                    <span className="text-[10px] text-slate-200 font-mono hidden lg:inline">DARK</span>
+                    <Moon className="w-4 h-4 text-slate-700" />
+                    <span className="text-[10px] text-slate-700 font-mono hidden lg:inline">DARK</span>
                   </>
                 )}
               </button>
             )}
 
-            <div className="flex items-center gap-1 pr-2 border-r border-white/10">
-              <Globe className="w-3.5 h-3.5 text-slate-300 mr-1" />
+            {/* Dedicated Language Switcher Component */}
+            <div className="flex items-center gap-1 bg-stone-200/80 dark:bg-slate-900/90 p-1 rounded-xl border border-stone-300/80 dark:border-slate-700">
+              <Globe className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400 ml-1 mr-0.5 shrink-0" />
               <button 
                 onClick={() => setLang('om')} 
-                className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${lang === 'om' ? 'bg-[#0EA5E9] text-slate-900' : 'text-slate-100 hover:text-[#0EA5E9] hover:bg-white/10'}`}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                  lang === 'om' 
+                    ? 'bg-sky-600 text-white dark:bg-sky-400 dark:text-slate-950 shadow-xs' 
+                    : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-stone-300/60 dark:hover:bg-slate-800'
+                }`}
                 title="Afaan Oromoo"
               >
-                OM
+                <span>OM</span>
+                <span className="hidden xl:inline text-[9px] font-medium opacity-90">(Oromoo)</span>
               </button>
               <button 
                 onClick={() => setLang('en')} 
-                className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${lang === 'en' ? 'bg-[#0EA5E9] text-slate-900' : 'text-slate-100 hover:text-[#0EA5E9] hover:bg-white/10'}`}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer flex items-center gap-1 ${
+                  lang === 'en' 
+                    ? 'bg-sky-600 text-white dark:bg-sky-400 dark:text-slate-950 shadow-xs' 
+                    : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-stone-300/60 dark:hover:bg-slate-800'
+                }`}
                 title="English"
               >
-                EN
+                <span>EN</span>
+                <span className="hidden xl:inline text-[9px] font-medium opacity-90">(English)</span>
               </button>
               <button 
                 onClick={() => setLang('am')} 
-                className={`px-2 py-1 rounded-lg text-[10px] font-black transition-all ${lang === 'am' ? 'bg-[#0EA5E9] text-slate-900' : 'text-slate-100 hover:text-[#0EA5E9] hover:bg-white/10'}`}
+                className={`px-2 py-1 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
+                  lang === 'am' 
+                    ? 'bg-sky-600 text-white dark:bg-sky-400 dark:text-slate-950 shadow-xs' 
+                    : 'text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-stone-300/60 dark:hover:bg-slate-800'
+                }`}
                 title="Amharic"
               >
                 AM
@@ -166,14 +208,14 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
               onClick={() => navigateTo('cart')}
               className={`relative px-3 py-1.5 rounded-xl border text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
                 activeTab === 'cart'
-                  ? 'bg-[#0EA5E9] text-slate-900 border-transparent shadow-md'
-                  : 'bg-white/10 border-white/20 text-slate-100 hover:bg-white/20'
+                  ? 'bg-sky-600 text-white dark:bg-sky-400 dark:text-slate-950 border-transparent shadow-md'
+                  : 'bg-stone-200/80 dark:bg-slate-800 border-stone-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 hover:bg-stone-300 dark:hover:bg-slate-700'
               }`}
             >
               <ShoppingCart className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Cart</span>
               {(cartItemCount ?? 0) > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-amber-400 text-slate-900 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md animate-bounce">
+                <span className="absolute -top-1.5 -right-1.5 bg-amber-400 text-slate-950 text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md animate-bounce">
                   {cartItemCount}
                 </span>
               )}
@@ -184,32 +226,39 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
               <button
                 onClick={onOpenManual}
                 title="Download Application User Manual PDF"
-                className="px-2.5 py-1.5 bg-[#0EA5E9] hover:bg-sky-400 active:scale-95 text-slate-900 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-sm cursor-pointer"
+                className="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-500 dark:bg-sky-400 dark:hover:bg-sky-300 text-white dark:text-slate-950 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
               >
-                <BookOpen className="w-3.5 h-3.5 text-slate-900" />
+                <BookOpen className="w-3.5 h-3.5" />
                 <span className="hidden lg:inline">PDF Manual</span>
               </button>
             )}
 
             {authState.isAuthenticated ? (
               <div className="flex items-center space-x-2">
-                <button
-                  id="header-admin-btn"
-                  onClick={() => navigateTo('admin')}
-                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all ${
-                    activeTab === 'admin'
-                      ? 'bg-[#0EA5E9] text-slate-900 border-transparent'
-                      : 'border-white/20 text-slate-100 hover:bg-white/10'
-                  }`}
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>{t('admin')}</span>
-                </button>
+                {authState.user?.role === 'admin' ? (
+                  <button
+                    id="header-admin-btn"
+                    onClick={() => navigateTo('admin')}
+                    className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border text-xs font-black transition-all cursor-pointer ${
+                      activeTab === 'admin'
+                        ? 'bg-sky-600 text-white dark:bg-sky-400 dark:text-slate-950 border-transparent shadow-md'
+                        : 'border-stone-300 dark:border-slate-700 text-slate-800 dark:text-slate-100 hover:bg-stone-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-500 dark:text-amber-300" />
+                    <span>Dashboard</span>
+                  </button>
+                ) : (
+                  <div className="flex items-center space-x-2 bg-stone-200/80 dark:bg-slate-800 px-3 py-1 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 border border-stone-300 dark:border-slate-700">
+                    <User className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                    <span className="max-w-[100px] truncate">{authState.user?.username || authState.user?.email}</span>
+                  </div>
+                )}
                 <button
                   id="header-logout-btn"
                   onClick={handleLogout}
-                  title="Logout Admin"
-                  className="p-1.5 text-slate-200 hover:text-red-400 hover:bg-white/10 rounded-lg transition-colors"
+                  title="Logout"
+                  className="p-1.5 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-stone-200 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -218,29 +267,45 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
               <button
                 id="header-login-btn"
                 onClick={() => navigateTo('login')}
-                className="flex items-center space-x-1 px-3 py-1.5 text-xs font-black text-slate-100 hover:text-[#0EA5E9] hover:bg-white/10 rounded-xl transition-all group"
+                className="flex items-center space-x-1.5 px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-sky-400 dark:hover:bg-sky-300 active:scale-95 text-white dark:text-slate-950 font-extrabold text-xs rounded-xl transition-all shadow-md cursor-pointer"
               >
-                <span>{t('staffSignIn')}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:translate-x-0.5 transition-transform" />
+                <User className="w-3.5 h-3.5" />
+                <span>Sign In / Create Account</span>
               </button>
             )}
           </div>
 
-          {/* Mobile Menu Toggle & Theme Button */}
+          {/* Mobile Menu Toggle, Language & Theme Buttons */}
           <div className="md:hidden flex items-center gap-2">
+            {/* Quick Mobile Language Switcher */}
+            <div className="flex items-center bg-stone-200 dark:bg-slate-800 rounded-xl p-0.5 border border-stone-300 dark:border-slate-700 text-[10px] font-black">
+              <button
+                onClick={() => setLang('om')}
+                className={`px-2 py-1 rounded-lg transition-all ${lang === 'om' ? 'bg-sky-600 text-white dark:bg-sky-400 dark:text-slate-950 font-bold' : 'text-slate-700 dark:text-slate-300'}`}
+              >
+                OM
+              </button>
+              <button
+                onClick={() => setLang('en')}
+                className={`px-2 py-1 rounded-lg transition-all ${lang === 'en' ? 'bg-sky-600 text-white dark:bg-sky-400 dark:text-slate-950 font-bold' : 'text-slate-700 dark:text-slate-300'}`}
+              >
+                EN
+              </button>
+            </div>
+
             {toggleTheme && (
               <button
                 onClick={toggleTheme}
                 title={theme === 'dark' ? 'Switch to Light' : 'Switch to Dark'}
-                className="p-2 rounded-xl text-slate-200 hover:bg-white/10 transition-colors"
+                className="p-2 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-stone-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
-                {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-200" />}
+                {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-700" />}
               </button>
             )}
             <button
               id="mobile-menu-toggle"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2.5 rounded-xl text-slate-200 hover:text-[#0EA5E9] hover:bg-white/10 focus:outline-none transition-colors"
+              className="p-2.5 rounded-xl text-slate-800 dark:text-slate-100 hover:text-sky-600 hover:bg-stone-200 dark:hover:bg-slate-800 focus:outline-none transition-colors cursor-pointer"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -343,27 +408,37 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
               {/* Action Buttons */}
               <div className="space-y-2 pt-2">
                 {authState.isAuthenticated ? (
-                  <button
-                    onClick={() => navigateTo('admin')}
-                    className="w-full py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-blue-200"
-                  >
-                    {t('adminDashboard')}
-                  </button>
+                  <div className="space-y-2">
+                    {authState.user?.role === 'admin' && (
+                      <button
+                        onClick={() => navigateTo('admin')}
+                        className="w-full py-3 bg-[#0EA5E9] text-slate-900 rounded-2xl font-black text-xs uppercase tracking-wider shadow-md shadow-sky-200"
+                      >
+                        Admin Dashboard
+                      </button>
+                    )}
+                    <button
+                      onClick={handleLogout}
+                      className="w-full py-2.5 bg-red-50 text-red-600 border border-red-200 rounded-2xl font-bold text-xs uppercase tracking-wider"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
                 ) : (
-                  <>
+                  <div className="space-y-2.5">
                     <button
                       onClick={() => navigateTo('login')}
-                      className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-2xl font-black text-xs uppercase tracking-wider transition-colors"
+                      className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-black text-xs uppercase tracking-wider transition-colors text-center cursor-pointer"
                     >
-                      {t('login')}
+                      LOGIN
                     </button>
                     <button
                       onClick={() => navigateTo('login')}
-                      className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-colors shadow-md shadow-blue-200"
+                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider transition-colors shadow-md text-center cursor-pointer"
                     >
-                      {t('createAccount')}
+                      CREATE ACCOUNT
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             </div>

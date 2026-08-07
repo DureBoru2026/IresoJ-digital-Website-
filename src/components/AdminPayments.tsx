@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, X, Search, Filter, MessageSquare, RefreshCw, Smartphone, CreditCard, ShieldCheck, Download, Clock3, CheckCircle2, XCircle } from 'lucide-react';
+import { Check, X, Search, Filter, MessageSquare, RefreshCw, Smartphone, CreditCard, ShieldCheck, Download, Clock3, CheckCircle2, XCircle, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Transaction } from '../types';
 import { formatETB } from '../utils';
 
@@ -13,8 +13,19 @@ export default function AdminPayments({ transactions, onUpdateStatus, onRefresh 
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterGateway, setFilterGateway] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'date' | 'amount' | 'status'>('date');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [noteInputs, setNoteInputs] = useState<{ [id: string]: string }>({});
   const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  const toggleSort = (field: 'date' | 'amount' | 'status') => {
+    if (sortBy === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
+  };
 
   const handleUpdate = async (id: string, status: 'approved' | 'rejected') => {
     setLoadingId(id);
@@ -40,6 +51,18 @@ export default function AdminPayments({ transactions, onUpdateStatus, onRefresh 
       t.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.purpose.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesStatus && matchesGateway && matchesSearch;
+  }).sort((a, b) => {
+    let comparison = 0;
+    if (sortBy === 'date') {
+      const timeA = new Date(a.date).getTime() || 0;
+      const timeB = new Date(b.date).getTime() || 0;
+      comparison = timeA - timeB;
+    } else if (sortBy === 'amount') {
+      comparison = a.amount - b.amount;
+    } else if (sortBy === 'status') {
+      comparison = a.status.localeCompare(b.status);
+    }
+    return sortOrder === 'asc' ? comparison : -comparison;
   });
 
   const handleExportCSV = () => {
@@ -143,12 +166,48 @@ export default function AdminPayments({ transactions, onUpdateStatus, onRefresh 
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-55/60 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="p-4 pl-6">Receipt / Ref Code</th>
+              <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <th 
+                  onClick={() => toggleSort('date')}
+                  className="p-4 pl-6 cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Receipt / Ref Code (Date)</span>
+                    {sortBy === 'date' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-[#0EA5E9]" /> : <ArrowDown className="w-3.5 h-3.5 text-[#0EA5E9]" />
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                    )}
+                  </div>
+                </th>
                 <th className="p-4">Customer Details</th>
                 <th className="p-4">Purchased Purpose</th>
-                <th className="p-4">Amount</th>
-                <th className="p-4">Verification</th>
+                <th 
+                  onClick={() => toggleSort('amount')}
+                  className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Amount</span>
+                    {sortBy === 'amount' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-[#0EA5E9]" /> : <ArrowDown className="w-3.5 h-3.5 text-[#0EA5E9]" />
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                    )}
+                  </div>
+                </th>
+                <th 
+                  onClick={() => toggleSort('status')}
+                  className="p-4 cursor-pointer hover:bg-slate-100 transition-colors"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span>Verification Status</span>
+                    {sortBy === 'status' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-[#0EA5E9]" /> : <ArrowDown className="w-3.5 h-3.5 text-[#0EA5E9]" />
+                    ) : (
+                      <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+                    )}
+                  </div>
+                </th>
                 <th className="p-4 pr-6 text-right">Actions / Reconciliation</th>
               </tr>
             </thead>

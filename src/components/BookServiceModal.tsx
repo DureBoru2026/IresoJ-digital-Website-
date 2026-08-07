@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Calendar, Clock, User, Phone, Mail, FileText, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
+import { X, Calendar, Clock, User, Phone, Mail, FileText, CheckCircle2, Sparkles, Loader2, CalendarPlus } from 'lucide-react';
 import { ProductService } from '../types';
+import { downloadICal } from '../utils/calendar';
 
 interface BookServiceModalProps {
   onClose: () => void;
@@ -212,12 +213,36 @@ export default function BookServiceModal({ onClose, products, lang, onSubmitBook
               </div>
             </div>
 
-            <button 
-              onClick={onClose}
-              className="w-full py-3 bg-[#0EA5E9] hover:bg-sky-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-sky-100 transition-colors"
-            >
-              {t.closeBtn}
-            </button>
+            <div className="flex flex-col gap-2 w-full">
+              <button 
+                onClick={() => {
+                  const [year, month, day] = bookingDate.split('-').map(Number);
+                  const [hours, minutes] = bookingTime.replace(/(AM|PM)/, '').split(':').map(Number);
+                  const isPM = bookingTime.includes('PM');
+                  const finalHours = isPM && hours < 12 ? hours + 12 : (!isPM && hours === 12 ? 0 : hours);
+                  
+                  const startDate = new Date(year, month - 1, day, finalHours, minutes);
+
+                  downloadICal({
+                    title: `Repair: ${getServiceTitle()}`,
+                    description: `Booking for ${customerName}. Notes: ${notes || 'N/A'}`,
+                    location: 'IresoJ Digital CSC, Kore Town, Ethiopia',
+                    startDate: startDate.toISOString(),
+                  });
+                }}
+                className="w-full py-3 bg-white border border-slate-200 text-slate-700 font-bold text-sm rounded-xl shadow-sm hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+              >
+                <CalendarPlus className="w-4 h-4 text-[#0EA5E9]" />
+                <span>Add to Calendar (.ics)</span>
+              </button>
+
+              <button 
+                onClick={onClose}
+                className="w-full py-3 bg-[#0EA5E9] hover:bg-sky-600 text-white font-bold text-sm rounded-xl shadow-lg shadow-sky-100 transition-colors"
+              >
+                {t.closeBtn}
+              </button>
+            </div>
           </div>
         ) : (
           /* Form Content View */

@@ -32,19 +32,27 @@ import {
   Database,
   Calendar,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  X,
+  BarChart3
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Transaction, Booking } from '../types';
 import { formatETB } from '../utils';
+import DataSyncBackupWidget from './DataSyncBackupWidget';
 
 interface AdminReportProps {
   transactions: Transaction[];
   bookings?: Booking[];
+  onRestoreTransactions?: (restored: Transaction[]) => void;
 }
 
 const COLORS = ['#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
-export default function AdminReport({ transactions = [], bookings = [] }: AdminReportProps) {
+export default function AdminReport({ transactions = [], bookings = [], onRestoreTransactions }: AdminReportProps) {
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [showTrendAnalysis, setShowTrendAnalysis] = useState(false);
+  const [showInventoryPredictor, setShowInventoryPredictor] = useState(false);
   const [isAutoBackupEnabled, setIsAutoBackupEnabled] = useState(true);
   const [backupLoading, setBackupLoading] = useState(false);
   const [backupMessage, setBackupMessage] = useState<string | null>(null);
@@ -913,6 +921,42 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
 
         <div className="flex flex-wrap items-center gap-3 shrink-0">
           <button
+            onClick={() => setShowTrendAnalysis(true)}
+            className="px-5 py-3 bg-purple-600 hover:bg-purple-500 text-white font-black rounded-xl text-xs flex items-center gap-2 transition-all shadow-lg shadow-purple-500/20 hover:scale-105 cursor-pointer"
+            title="Analyze top 5 frequent service requests per month"
+          >
+            <BarChart3 className="w-4 h-4 text-purple-200" />
+            <span>Bulk Trend Analysis</span>
+          </button>
+
+          <button
+            onClick={() => setShowInventoryPredictor(true)}
+            className="px-5 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl text-xs flex items-center gap-2 transition-all shadow-lg shadow-emerald-500/20 hover:scale-105 cursor-pointer"
+            title="Analyze transaction history to suggest optimal reorder points"
+          >
+            <TrendingUp className="w-4 h-4 text-emerald-200" />
+            <span>Inventory Predictions</span>
+          </button>
+
+          <button
+            onClick={() => setShowSummaryModal(true)}
+            className="px-5 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-black rounded-xl text-xs flex items-center gap-2 transition-all shadow-lg shadow-amber-400/20 hover:scale-105 cursor-pointer border border-amber-500/30"
+            title="Open printable Monthly Executive Summary Report for IresoJ Management"
+          >
+            <FileText className="w-4 h-4 text-slate-950 stroke-[3]" />
+            <span>Summary Report View</span>
+          </button>
+
+          <button
+            onClick={exportCombinedAuditCSV}
+            className="px-5 py-3 bg-[#0EA5E9] hover:bg-sky-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-2 transition-all shadow-lg shadow-sky-500/20 hover:scale-105 cursor-pointer"
+            title="Download full combined audit report (Transactions & Bookings) as CSV"
+          >
+            <Download className="w-4 h-4 text-slate-950 stroke-[3]" />
+            <span>Download Report (CSV)</span>
+          </button>
+
+          <button
             onClick={() => exportMonthlyReport('csv')}
             className="px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-xl text-xs flex items-center gap-2 transition-all shadow-md cursor-pointer"
             title="Download current month's transactions & bookings CSV document"
@@ -967,6 +1011,9 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
           </button>
         </div>
       </div>
+
+      {/* Periodic Data Sync & Redundancy Engine Widget */}
+      <DataSyncBackupWidget transactions={transactions} bookings={bookings} onRestoreTransactions={onRestoreTransactions} />
 
       {/* Automated Weekly Database Backup & Email Dispatcher Panel */}
       <div className="bg-gradient-to-br from-slate-900 via-sky-950 to-slate-900 rounded-3xl p-6 text-white border border-sky-800/50 shadow-xl space-y-4">
@@ -1358,6 +1405,389 @@ export default function AdminReport({ transactions = [], bookings = [] }: AdminR
           </div>
         </div>
       </div>
+
+      {/* Monthly Management Performance Summary Report Modal */}
+      {/* Trend Analysis Modal Overlay */}
+      <AnimatePresence>
+        {showTrendAnalysis && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800"
+            >
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+                    <BarChart3 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Bulk Trend Analysis</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-mono uppercase tracking-widest">Top 5 Monthly Service Requests</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowTrendAnalysis(false)}
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-8 space-y-8">
+                {(() => {
+                  // Logic to aggregate top 5 service requests per month
+                  const monthCounts: Record<string, Record<string, number>> = {};
+                  bookings.forEach(b => {
+                    const date = new Date(b.date);
+                    const monthKey = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+                    if (!monthCounts[monthKey]) monthCounts[monthKey] = {};
+                    monthCounts[monthKey][b.serviceId] = (monthCounts[monthKey][b.serviceId] || 0) + 1;
+                  });
+
+                  const currentMonthKey = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+                  const currentMonthData = monthCounts[currentMonthKey] || {};
+                  const sortedServices = Object.entries(currentMonthData)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 5);
+
+                  if (sortedServices.length === 0) {
+                    return (
+                      <div className="py-12 text-center space-y-3">
+                        <div className="w-16 h-16 bg-slate-50 dark:bg-slate-800/50 rounded-full flex items-center justify-center mx-auto">
+                          <BarChart3 className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                        </div>
+                        <p className="text-sm font-bold text-slate-400">No data available for {currentMonthKey}</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Service Item</span>
+                        <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Request Volume</span>
+                      </div>
+                      <div className="space-y-4">
+                        {sortedServices.map(([id, count], idx) => (
+                          <div key={id} className="space-y-2">
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="font-bold text-slate-700 dark:text-slate-200">#{idx + 1} {id}</span>
+                              <span className="font-mono text-purple-600 dark:text-purple-400 font-bold">{count} Requests</span>
+                            </div>
+                            <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${(count / sortedServices[0][1]) * 100}%` }}
+                                transition={{ duration: 0.8, delay: idx * 0.1 }}
+                                className="h-full bg-gradient-to-r from-purple-500 to-indigo-600"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="pt-6 border-t border-slate-100 dark:border-slate-800 text-center">
+                        <p className="text-[11px] text-slate-500 font-medium">Data aggregated from {bookings.length} historical service bookings.</p>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      
+      {/* Predictive Inventory Trends Modal Overlay */}
+      <AnimatePresence>
+        {showInventoryPredictor && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800"
+            >
+              <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">Predictive Inventory Trends</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-mono uppercase tracking-widest">Reorder Point Suggestions</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowInventoryPredictor(false)}
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-400 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-8 space-y-6">
+                {(() => {
+                  // Logic to analyze reorder points based on transaction frequency
+                  const itemVelocity: Record<string, number> = {};
+                  transactions.forEach(tx => {
+                    const itemName = tx.purpose || 'Unknown Item';
+                    itemVelocity[itemName] = (itemVelocity[itemName] || 0) + 1;
+                  });
+
+                  const suggestions = Object.entries(itemVelocity)
+                    .map(([item, count]) => {
+                      const velocityPerMonth = count; // Simplified
+                      const recommendedBuffer = Math.ceil(velocityPerMonth * 0.2); // 20% buffer
+                      const reorderPoint = velocityPerMonth + recommendedBuffer;
+                      return { item, velocityPerMonth, reorderPoint };
+                    })
+                    .sort((a, b) => b.velocityPerMonth - a.velocityPerMonth)
+                    .slice(0, 5);
+
+                  if (suggestions.length === 0) {
+                    return (
+                      <div className="py-12 text-center">
+                        <p className="text-sm text-slate-400">Not enough transaction history to generate predictions.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-3 text-[10px] font-black text-slate-400 uppercase tracking-wider px-2">
+                        <span>High-Demand Item</span>
+                        <span className="text-center">Monthly Velocity</span>
+                        <span className="text-right">Suggested Reorder</span>
+                      </div>
+                      <div className="space-y-3">
+                        {suggestions.map((s, idx) => (
+                          <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800 grid grid-cols-3 items-center">
+                            <span className="text-xs font-bold text-slate-900 dark:text-white truncate">{s.item}</span>
+                            <div className="text-center">
+                              <span className="px-2 py-1 bg-sky-100 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-lg text-[10px] font-bold">
+                                {s.velocityPerMonth} Sales/mo
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                                {s.reorderPoint} Units
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30 rounded-2xl">
+                        <p className="text-[10px] text-amber-800 dark:text-amber-400 leading-relaxed">
+                          <strong>Note:</strong> Predictions are based on historical purchase frequency. Suggested reorder points include a 20% safety stock buffer to prevent stockouts during peak demand cycles.
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {showSummaryModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200">
+          <div className="bg-white text-slate-900 rounded-3xl shadow-2xl max-w-3xl w-full border border-slate-200 overflow-hidden relative flex flex-col my-auto max-h-[92vh]">
+            
+            {/* Modal Control Header (Hidden in Print) */}
+            <div className="print:hidden bg-slate-900 text-white p-5 flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-amber-400 text-slate-950 rounded-xl font-black">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-black text-base">Executive Monthly Performance Summary</h3>
+                  <p className="text-[11px] text-slate-400 font-mono">IresoJ Digital Management Overview</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="bg-amber-400 hover:bg-amber-300 text-slate-950 px-4 py-2 rounded-xl text-xs font-black shadow-md flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Print Report</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSummaryModal(false)}
+                  className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Report Document Body */}
+            <div id="printable-summary-report" className="p-8 space-y-6 overflow-y-auto bg-white font-sans text-slate-900">
+              
+              {/* Report Header */}
+              <div className="flex items-start justify-between border-b-2 border-slate-900 pb-5">
+                <div>
+                  <span className="text-[10px] font-mono font-bold text-sky-600 uppercase tracking-widest block mb-1">
+                    Official Management Report • Kore Town Counter
+                  </span>
+                  <h1 className="text-2xl font-black tracking-tight text-slate-900">
+                    MONTHLY PERFORMANCE & REVENUE OVERVIEW
+                  </h1>
+                  <p className="text-xs text-slate-500 font-medium mt-1">
+                    IresoJ Digital Website & Computer Service Center (CSC) • West Arsi, Ethiopia
+                  </p>
+                </div>
+                <div className="text-right font-mono text-[11px] space-y-0.5 text-slate-600">
+                  <div className="font-bold text-slate-900">Audit Date: {new Date().toLocaleDateString()}</div>
+                  <div>Period: Current Financial Quarter</div>
+                  <div className="text-emerald-600 font-bold">✓ Verified Audit Log</div>
+                </div>
+              </div>
+
+              {/* KPI Summary Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-4 bg-sky-50 border border-sky-200 rounded-2xl space-y-1">
+                  <span className="text-[10px] font-mono font-bold text-sky-700 uppercase block">Gross Revenue</span>
+                  <span className="text-lg font-black text-slate-900 block">{formatETB(reportData.totalApprovedRevenue)}</span>
+                  <span className="text-[10px] text-emerald-600 font-bold block">✓ Verified Receipts</span>
+                </div>
+
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-1">
+                  <span className="text-[10px] font-mono font-bold text-amber-800 uppercase block">Peak Month Velocity</span>
+                  <span className="text-lg font-black text-slate-900 block">{formatETB(reportData.maxMonthlyRevenue)}</span>
+                  <span className="text-[10px] text-amber-700 font-bold block">Month: {reportData.peakMonthLabel}</span>
+                </div>
+
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-1">
+                  <span className="text-[10px] font-mono font-bold text-emerald-800 uppercase block">Approval Rate</span>
+                  <span className="text-lg font-black text-slate-900 block">
+                    {reportData.totalOrders > 0 ? Math.round((reportData.approvedOrders / reportData.totalOrders) * 100) : 100}%
+                  </span>
+                  <span className="text-[10px] text-slate-600 block">{reportData.approvedOrders} of {reportData.totalOrders} Logs</span>
+                </div>
+
+                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-2xl space-y-1">
+                  <span className="text-[10px] font-mono font-bold text-indigo-800 uppercase block">Avg Order Value</span>
+                  <span className="text-lg font-black text-slate-900 block">{formatETB(Math.round(reportData.avgOrderValue))}</span>
+                  <span className="text-[10px] text-indigo-700 font-bold block">Per Approved Sale</span>
+                </div>
+              </div>
+
+              {/* Monthly Revenue Trend Table */}
+              <div className="space-y-3 pt-2">
+                <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 font-mono border-l-4 border-[#0EA5E9] pl-3">
+                  Monthly Revenue & Volume Breakdown
+                </h3>
+                <div className="border border-slate-200 rounded-2xl overflow-hidden">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead className="bg-slate-900 text-white uppercase text-[10px] font-bold tracking-wider">
+                      <tr>
+                        <th className="p-3">Month</th>
+                        <th className="p-3 text-right">Revenue (ETB)</th>
+                        <th className="p-3 text-center">Transactions</th>
+                        <th className="p-3 text-right">Performance Tag</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 bg-white">
+                      {reportData.monthlyRevenueData.map((m, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50">
+                          <td className="p-3 font-bold text-slate-900">{m.month}</td>
+                          <td className="p-3 text-right font-black text-[#0EA5E9]">{formatETB(m.revenue)}</td>
+                          <td className="p-3 text-center font-bold text-slate-700">{m.txCount} sales</td>
+                          <td className="p-3 text-right">
+                            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                              m.revenue === reportData.maxMonthlyRevenue && m.revenue > 0
+                                ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                : 'bg-slate-100 text-slate-700'
+                            }`}>
+                              {m.revenue === reportData.maxMonthlyRevenue && m.revenue > 0 ? '★ Peak Velocity' : 'Standard'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Management Executive Recommendations */}
+              <div className="p-5 bg-sky-50 border border-sky-200 rounded-2xl space-y-2 text-xs">
+                <h4 className="font-bold text-sky-900 font-mono uppercase tracking-wider flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>Executive Strategic Insights & Directives</span>
+                </h4>
+                <ul className="list-disc list-inside space-y-1 text-slate-700 leading-relaxed font-sans">
+                  <li>Strongest cash conversion recorded on mobile banking gateway <strong>telebirr</strong>.</li>
+                  <li>Customer service queue efficiency remains high with a <strong>{reportData.totalOrders > 0 ? Math.round((reportData.approvedOrders / reportData.totalOrders) * 100) : 100}% compliance rate</strong>.</li>
+                  <li>Maintain spare component stock level for laptop hardware repair services at Kore Town counter.</li>
+                </ul>
+              </div>
+
+              {/* Footer Stamp & Signature Block */}
+              <div className="pt-6 border-t-2 border-dashed border-slate-300 flex items-center justify-between text-xs font-mono">
+                <div className="space-y-1">
+                  <span className="font-bold text-slate-900 block">IresoJ Management Office</span>
+                  <span className="text-[10px] text-slate-500">Prepared by Admin Jemal Fano</span>
+                </div>
+                <div className="text-right space-y-4">
+                  <div className="border-t border-slate-400 pt-1 text-[10px] text-slate-600">
+                    Authorized Sign & Official Stamp
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Control Footer */}
+            <div className="print:hidden p-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowSummaryModal(false)}
+                className="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100 transition-all cursor-pointer"
+              >
+                Close Report
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="px-6 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Print Management Summary</span>
+              </button>
+            </div>
+
+          </div>
+
+          {/* Embedded Print CSS */}
+          <style>{`
+            @media print {
+              body * {
+                visibility: hidden;
+              }
+              #printable-summary-report, #printable-summary-report * {
+                visibility: visible;
+              }
+              #printable-summary-report {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 24px;
+                box-shadow: none !important;
+                border: none !important;
+              }
+            }
+          `}</style>
+        </div>
+      )}
 
     </div>
   );

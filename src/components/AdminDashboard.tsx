@@ -19,7 +19,9 @@ import {
   Zap,
   ShieldCheck,
   RefreshCw,
-  Download
+  Download,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -39,6 +41,7 @@ import RecentActivityFeed from './RecentActivityFeed';
 import AdminFailedLoginAlerts from './AdminFailedLoginAlerts';
 import InventoryLowWidget from './InventoryLowWidget';
 import RevenueAlertWidget from './RevenueAlertWidget';
+import DataSyncBackupWidget from './DataSyncBackupWidget';
 
 interface AdminDashboardProps {
   bookings: Booking[];
@@ -48,8 +51,11 @@ interface AdminDashboardProps {
   onSetTab: (tab: any) => void;
   onUpdateProduct?: (id: string, payload: Partial<ProductService>) => Promise<boolean>;
   onRefresh?: () => Promise<void> | void;
+  onRestoreTransactions?: (restored: Transaction[]) => void;
   lastUpdated?: string;
   isLoading?: boolean;
+  theme?: 'light' | 'dark';
+  toggleTheme?: () => void;
 }
 
 const CHART_COLORS = ['#0EA5E9', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
@@ -62,8 +68,11 @@ export default function AdminDashboard({
   onSetTab, 
   onUpdateProduct,
   onRefresh,
+  onRestoreTransactions,
   lastUpdated,
-  isLoading
+  isLoading,
+  theme = 'light',
+  toggleTheme
 }: AdminDashboardProps) {
   
   const today = new Date().toISOString().split('T')[0];
@@ -73,6 +82,100 @@ export default function AdminDashboard({
   const [localLastUpdated, setLocalLastUpdated] = useState<string>(
     lastUpdated || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
   );
+
+  const stats = useMemo(() => {
+    const todayBookings = bookings.filter(b => b.date === today);
+    const todayTransactions = transactions.filter(tx => tx.date.split('T')[0] === today && tx.status === 'approved');
+    const todayFeedback = feedback.filter(f => f.date.split('T')[0] === today);
+
+    const totalRevenueToday = todayTransactions.reduce((sum, tx) => sum + tx.amount, 0);
+
+    // Prepare Daily Trend Data (Last 7 Days)
+    const dailyTrend: Record<string, number> = {};
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      return d.toISOString().split('T')[0];
+    }).reverse();
+
+    last7Days.forEach(date => dailyTrend[date] = 0);
+    
+    transactions.filter(tx => tx.status === 'approved').forEach(tx => {
+      const date = tx.date.split('T')[0];
+      if (dailyTrend[date] !== undefined) {
+        dailyTrend[date] += tx.amount;
+      }
+    });
+
+    const trendData = last7Days.map(date => ({
+      name: new Date(date).toLocaleDateString(undefined, { weekday: 'short' }),
+      revenue: dailyTrend[date]
+    }));
+
+    // Gateway Summary Data
+    const gatewayStats: Record<string, number> = {};
+    transactions.filter(tx => tx.status === 'approved' && tx.date.split('T')[0] === today).forEach(tx => {
+      gatewayStats[tx.paymentGateway] = (gatewayStats[tx.paymentGateway] || 0) + tx.amount;
+    });
+
+    const gatewayData = Object.entries(gatewayStats).map(([name, value]) => ({
+      name: name.charAt(0).toUpperCase() + name.slice(1),
+      amount: value
+    }));
+
+    return {
+      todayBookingsCount: todayBookings.length,
+      todayRevenue: totalRevenueToday,
+      todayFeedbackCount: todayFeedback.length,
+      pendingBookings: bookings.filter(b => b.status === 'pending').length,
+      pendingTransactions: transactions.filter(tx => tx.status === 'pending').length,
+      unreadFeedback: feedback.filter(f => f.status === 'unread').length,
+      trendData,
+      gatewayData
+    };
+  }, [bookings, transactions, feedback, today]);
+
+  const recentActivity = useMemo(() => {
+    const activities: any[] = [];
+
+    bookings.forEach(b => {
+      activities.push({
+        id: `booking-${b.id}`,
+        type: 'booking',
+        title: 'New Service Booking',
+        description: `${b.customerName} booked ${b.serviceTitle}`,
+        time: b.date,
+        status: b.status,
+        icon: <Calendar className="w-4 h-4 text-sky-500" />
+      });
+    });
+
+    transactions.forEach(tx => {
+      activities.push({
+        id: `tx-${tx.id}`,
+        type: 'transaction',
+        title: 'Payment Received',
+        description: `${tx.customerName} submitted ${formatETB(tx.amount)} via ${tx.paymentGateway}`,
+        time: tx.date,
+        status: tx.status,
+        icon: <DollarSign className="w-4 h-4 text-emerald-500" />
+      });
+    });
+
+    feedback.forEach(f => {
+      activities.push({
+        id: `fb-${f.id}`,
+        type: 'feedback',
+        title: 'New Customer Feedback',
+        description: `${f.name}: "${f.message.substring(0, 50)}${f.message.length > 50 ? '...' : ''}"`,
+        time: f.date,
+        status: f.status,
+        icon: <MessageSquare className="w-4 h-4 text-amber-500" />
+      });
+    });
+
+    return activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8);
+  }, [bookings, transactions, feedback]);
 
   if (isLoading) {
     return (
@@ -213,117 +316,44 @@ export default function AdminDashboard({
     }, 1200); // Realistic compilations and UI response simulator
   };
 
-  const stats = useMemo(() => {
-    const todayBookings = bookings.filter(b => b.date === today);
-    const todayTransactions = transactions.filter(tx => tx.date.split('T')[0] === today && tx.status === 'approved');
-    const todayFeedback = feedback.filter(f => f.date.split('T')[0] === today);
-
-    const totalRevenueToday = todayTransactions.reduce((sum, tx) => sum + tx.amount, 0);
-
-    // Prepare Daily Trend Data (Last 7 Days)
-    const dailyTrend: Record<string, number> = {};
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
-    }).reverse();
-
-    last7Days.forEach(date => dailyTrend[date] = 0);
-    
-    transactions.filter(tx => tx.status === 'approved').forEach(tx => {
-      const date = tx.date.split('T')[0];
-      if (dailyTrend[date] !== undefined) {
-        dailyTrend[date] += tx.amount;
-      }
-    });
-
-    const trendData = last7Days.map(date => ({
-      name: new Date(date).toLocaleDateString(undefined, { weekday: 'short' }),
-      revenue: dailyTrend[date]
-    }));
-
-    // Gateway Summary Data
-    const gatewayStats: Record<string, number> = {};
-    transactions.filter(tx => tx.status === 'approved' && tx.date.split('T')[0] === today).forEach(tx => {
-      gatewayStats[tx.paymentGateway] = (gatewayStats[tx.paymentGateway] || 0) + tx.amount;
-    });
-
-    const gatewayData = Object.entries(gatewayStats).map(([name, value]) => ({
-      name: name.charAt(0).toUpperCase() + name.slice(1),
-      amount: value
-    }));
-
-    return {
-      todayBookingsCount: todayBookings.length,
-      todayRevenue: totalRevenueToday,
-      todayFeedbackCount: todayFeedback.length,
-      pendingBookings: bookings.filter(b => b.status === 'pending').length,
-      pendingTransactions: transactions.filter(tx => tx.status === 'pending').length,
-      unreadFeedback: feedback.filter(f => f.status === 'unread').length,
-      trendData,
-      gatewayData
-    };
-  }, [bookings, transactions, feedback, today]);
-
-  const recentActivity = useMemo(() => {
-    const activities: any[] = [];
-
-    bookings.forEach(b => {
-      activities.push({
-        id: `booking-${b.id}`,
-        type: 'booking',
-        title: 'New Service Booking',
-        description: `${b.customerName} booked ${b.serviceTitle}`,
-        time: b.date,
-        status: b.status,
-        icon: <Calendar className="w-4 h-4 text-sky-500" />
-      });
-    });
-
-    transactions.forEach(tx => {
-      activities.push({
-        id: `tx-${tx.id}`,
-        type: 'transaction',
-        title: 'Payment Received',
-        description: `${tx.customerName} submitted ${formatETB(tx.amount)} via ${tx.paymentGateway}`,
-        time: tx.date,
-        status: tx.status,
-        icon: <DollarSign className="w-4 h-4 text-emerald-500" />
-      });
-    });
-
-    feedback.forEach(f => {
-      activities.push({
-        id: `fb-${f.id}`,
-        type: 'feedback',
-        title: 'New Customer Feedback',
-        description: `${f.name}: "${f.message.substring(0, 50)}${f.message.length > 50 ? '...' : ''}"`,
-        time: f.date,
-        status: f.status,
-        icon: <MessageSquare className="w-4 h-4 text-amber-500" />
-      });
-    });
-
-    return activities.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 8);
-  }, [bookings, transactions, feedback]);
-
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 bg-gradient-to-br from-white via-sky-50/40 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 sm:p-6 rounded-3xl border border-sky-100/80 dark:border-slate-800/80 shadow-sm">
       
       {/* Daily Summary Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-2xl font-black text-slate-900 font-display">Command Center</h2>
-            <span className="text-[10px] font-mono font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white font-display">Command Center</h2>
+            <span className="text-[10px] font-mono font-bold uppercase bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               Live Sync
             </span>
           </div>
-          <p className="text-sm text-slate-500">Real-time business intelligence dashboard &amp; store telemetry</p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">Real-time business intelligence dashboard &amp; store telemetry</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
+          {/* Dedicated Theme Toggle Button */}
+          {toggleTheme && (
+            <button
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 text-white dark:bg-amber-400 dark:text-slate-950 font-black text-xs transition-all shadow-md hover:scale-105 cursor-pointer"
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="w-4 h-4 text-slate-950 animate-spin-slow" />
+                  <span>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-4 h-4 text-amber-300" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+            </button>
+          )}
+
           {/* Last Updated Timestamp Visual Indicator */}
           <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-slate-200/80 shadow-2xs text-xs font-mono">
             <Clock className="w-3.5 h-3.5 text-slate-400" />
@@ -363,6 +393,9 @@ export default function AdminDashboard({
           </div>
         </div>
       </div>
+
+      {/* Periodic Data Sync & Redundancy Engine Widget */}
+      <DataSyncBackupWidget transactions={transactions} bookings={bookings} onRestoreTransactions={onRestoreTransactions} />
 
       {/* Quick Actions Bar */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-5 sm:p-6 text-white shadow-lg space-y-4 border border-slate-800">

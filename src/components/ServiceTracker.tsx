@@ -16,7 +16,8 @@ import {
   Check, 
   FileText, 
   ShieldCheck,
-  Calendar
+  Calendar,
+  Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -94,11 +95,36 @@ const MOCK_FALLBACK_REPAIRS: Record<string, TrackResult> = {
 };
 
 const TIMELINE_STAGES = [
-  { stage: 1, title: 'Check-In', desc: 'Received at Hub' },
-  { stage: 2, title: 'Diagnostics', desc: 'Hardware Inspection' },
-  { stage: 3, title: 'Bench Work', desc: 'Repair & Parts Install' },
-  { stage: 4, title: 'Quality Audit', desc: 'Testing & OS Checks' },
-  { stage: 5, title: 'Ready', desc: 'Pickup at Workbench' }
+  { 
+    stage: 1, 
+    title: 'Received', 
+    desc: 'Received at Hub',
+    tooltip: 'Initial check-in where we log your device details and confirm the physical condition upon arrival.'
+  },
+  { 
+    stage: 2, 
+    title: 'In Diagnostics', 
+    desc: 'Hardware Inspection',
+    tooltip: 'Advanced testing using multimeter and software tools to isolate the specific component failure or OS corruption.'
+  },
+  { 
+    stage: 3, 
+    title: 'Repairing', 
+    desc: 'Repair & Parts Install',
+    tooltip: 'The hands-on phase where components like screens, keyboards, or motherboards are repaired or replaced with new parts.'
+  },
+  { 
+    stage: 4, 
+    title: 'Testing', 
+    desc: 'Testing & OS Checks',
+    tooltip: 'Post-repair stress testing to ensure the device performs under load and that the repair resolved the original issue.'
+  },
+  { 
+    stage: 5, 
+    title: 'Ready for Pickup', 
+    desc: 'Pickup at Workbench',
+    tooltip: 'Final quality audit complete. Your device is cleaned, packed, and waiting for you to collect from our Kore center.'
+  }
 ];
 
 interface ServiceTrackerProps {
@@ -486,7 +512,7 @@ export default function ServiceTracker({ isAdmin, onBookingStatusUpdate }: Servi
                   return (
                     <div
                       key={step.stage}
-                      className={`p-3 rounded-2xl border text-center transition-all ${
+                      className={`p-3 rounded-2xl border text-center transition-all relative group ${
                         isCurrent
                           ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-200 scale-[1.02]'
                           : isDone
@@ -494,6 +520,16 @@ export default function ServiceTracker({ isAdmin, onBookingStatusUpdate }: Servi
                           : 'bg-white text-slate-400 border-slate-200 opacity-60'
                       }`}
                     >
+                      {/* Context-Aware Tooltip */}
+                      <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="relative group/tooltip">
+                          <Info className={`w-3 h-3 ${isCurrent ? 'text-indigo-200' : 'text-slate-400'}`} />
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-900 text-white text-[10px] font-medium rounded-lg shadow-xl pointer-events-none z-20 opacity-0 group-hover/tooltip:opacity-100 transition-opacity">
+                            {step.tooltip}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+                          </div>
+                        </div>
+                      </div>
                       <div className={`w-7 h-7 rounded-full mx-auto mb-2 flex items-center justify-center font-mono font-black text-xs ${
                         isCurrent ? 'bg-white text-indigo-600' : isDone ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500'
                       }`}>

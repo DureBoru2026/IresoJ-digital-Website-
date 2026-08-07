@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus, Trash2, Phone, ShieldCheck, CheckCircle2, AlertCircle, Send, QrCode, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Trash2, Phone, ShieldCheck, CheckCircle2, AlertCircle, Send, QrCode, ArrowRight, Printer, FileText } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useLanguage } from '../LanguageContext';
+import PhysicalReceiptModal, { ReceiptData } from './PhysicalReceiptModal';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 export interface CartItem {
   id: string;
@@ -41,13 +44,37 @@ export default function Cart({
   const [phoneNumber, setPhoneNumber] = useState('');
   const [reference, setReference] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [quoteSubmitting, setQuoteSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
 
   const MERCHANT_TELEBIRR = '+251995852194';
   const MERCHANT_CBE_BIRR = '456012';
 
   const totalAmount = items.reduce((sum, item) => sum + item.denomination * item.quantity, 0);
   const totalItemsCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const generateReceiptObject = () => {
+    return {
+      receiptNumber: `REC-${Date.now().toString().slice(-6)}`,
+      customerName: 'Airtime Customer',
+      customerPhone: phoneNumber || '+2519...',
+      date: new Date().toLocaleString(),
+      paymentGateway: gateway,
+      referenceNumber: reference || 'REF-PENDING',
+      items: items.map(item => ({
+        id: item.id,
+        description: `${item.carrier === 'ethio' ? 'Ethio Telecom' : 'Safaricom'} ${item.denomination} ETB Airtime Card`,
+        quantity: item.quantity,
+        unitPrice: item.denomination,
+        totalPrice: item.denomination * item.quantity
+      })),
+      subtotal: totalAmount,
+      tax: 0,
+      totalAmount: totalAmount,
+      purpose: `Consolidated Airtime (${totalItemsCount} cards)`
+    };
+  };
 
   const handleAddCardToCart = () => {
     onAddItem({ carrier, denomination: selectedDenom });
@@ -95,6 +122,49 @@ export default function Cart({
       setMessage({ type: 'error', text: t('networkError') });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleRequestBulkQuote = async () => {
+    if (items.length === 0) {
+      setMessage({ type: 'error', text: 'Your cart is empty. Add items to request a quote.' });
+      return;
+    }
+
+    if (!phoneNumber) {
+      setMessage({ type: 'error', text: 'Please provide your phone number so we can contact you regarding the quote.' });
+      return;
+    }
+
+    setQuoteSubmitting(true);
+    setMessage(null);
+
+    try {
+      const summaryItemsDesc = items
+        .map(i => `${i.quantity}x ${i.carrier === 'ethio' ? 'Ethio' : 'Safaricom'} ${i.denomination} ETB`)
+        .join('\n');
+
+      const quoteMessage = {
+        name: phoneNumber, // Using phone as identifier if name isn't present
+        email: 'quote_request@iresoj.com',
+        subject: `BULK QUOTE REQUEST: ${totalAmount} ETB Total Value`,
+        message: `Customer with phone ${phoneNumber} is requesting a bulk discount quote for the following items:\n\n${summaryItemsDesc}\n\nTotal Face Value: ${totalAmount} ETB\nTotal Cards: ${totalItemsCount}`,
+        status: 'new',
+        createdAt: serverTimestamp(),
+        type: 'quote'
+      };
+
+      await addDoc(collection(db, 'supportMessages'), quoteMessage);
+      
+      setMessage({ 
+        type: 'success', 
+        text: 'Bulk quote request sent! Our team will review your order and contact you with a discounted offer via phone.' 
+      });
+    } catch (err) {
+      console.error("Quote error:", err);
+      setMessage({ type: 'error', text: 'Failed to send quote request. Please try again later.' });
+    } finally {
+      setQuoteSubmitting(false);
     }
   };
 
@@ -374,15 +444,44 @@ export default function Cart({
               <button
                 type="submit"
                 disabled={submitting || items.length === 0}
-                className="w-full bg-[#0EA5E9] hover:bg-sky-600 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-sky-200 text-sm"
+                className="w-full bg-[#0EA5E9] hover:bg-sky-600 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-sky-200 text-sm cursor-pointer"
               >
                 {submitting ? t('verifying') : `Complete Checkout (${totalAmount} ETB)`}
                 <ArrowRight className="w-4 h-4" />
               </button>
+
+              <button
+                type="button"
+                onClick={handleRequestBulkQuote}
+                disabled={quoteSubmitting || items.length === 0}
+                className="w-full bg-white hover:bg-slate-50 disabled:opacity-50 text-slate-900 border-2 border-slate-900 font-bold py-3 rounded-xl flex items-center justify-center gap-2 transition-all text-xs cursor-pointer"
+              >
+                {quoteSubmitting ? 'Sending Request...' : 'Request Bulk Quote (Volume Discount)'}
+                <FileText className="w-4 h-4" />
+              </button>
+
+              {items.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setReceiptData(generateReceiptObject())}
+                  className="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black py-3 rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm text-xs cursor-pointer border border-amber-500/30"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Print Physical Customer Receipt</span>
+                </button>
+              )}
             </form>
           </div>
         </div>
       </div>
+
+      {/* Physical Receipt Modal */}
+      {receiptData && (
+        <PhysicalReceiptModal
+          receipt={receiptData}
+          onClose={() => setReceiptData(null)}
+        />
+      )}
     </div>
   );
 }

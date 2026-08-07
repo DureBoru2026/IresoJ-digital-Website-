@@ -143,17 +143,17 @@ export default function HomeDashboardShowcase() {
   };
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-500">
+    <div className="max-w-7xl mx-auto space-y-12 animate-in fade-in duration-500">
       
       {/* Navigation Header Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-3 rounded-3xl border border-slate-100 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-slate-900 p-3 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setActiveTab('welcome')}
             className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'welcome' 
-                ? 'bg-slate-900 text-white shadow-md' 
-                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                ? 'bg-slate-900 text-white dark:bg-amber-400 dark:text-slate-950 shadow-md' 
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
             }`}
           >
             <Sparkles className="w-4 h-4 text-sky-400" />
@@ -165,7 +165,7 @@ export default function HomeDashboardShowcase() {
             className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'materials' 
                 ? 'bg-sky-600 text-white shadow-md shadow-sky-200' 
-                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
             }`}
           >
             <GraduationCap className="w-4 h-4" />
@@ -177,7 +177,7 @@ export default function HomeDashboardShowcase() {
             className={`px-5 py-2.5 rounded-2xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
               activeTab === 'commission' 
                 ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-200' 
-                : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
             }`}
           >
             <Percent className="w-4 h-4 text-amber-700" />
@@ -194,130 +194,198 @@ export default function HomeDashboardShowcase() {
         </button>
       </div>
 
-      {/* TAB 1: WELCOME & ANIMATED DASHBOARD SHOWCASE */}
+      {/* TAB 1: WELCOME & ANIMATED DASHBOARD SHOWCASE (YE-BUNA HERO) */}
       {activeTab === 'welcome' && (
-        <div className="space-y-8">
-          <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <span className="text-[10px] font-mono font-black uppercase tracking-widest text-sky-600 bg-sky-50 px-3 py-1 rounded-full border border-sky-100">
-              Interactive System Overview
-            </span>
-            <h2 className="text-3xl font-black text-slate-900 font-display">
-              Welcome to <span className="text-sky-600">IresoJ Digital CSC</span>
-            </h2>
-            <p className="text-xs text-slate-500 leading-relaxed font-medium">
-              Explore our real-time interactive dashboard introducing our core digital ecosystem, live service queue monitors, web development project structures, and educational academy resources.
-            </p>
-          </div>
-
-          {/* Animated Dashboard Card */}
-          <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white border border-slate-800 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-sky-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            {/* Dashboard Mock Header Bar */}
-            <div className="flex items-center justify-between pb-6 border-b border-slate-800/80 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-rose-500 inline-block" />
-                  <span className="w-3 h-3 rounded-full bg-amber-500 inline-block" />
-                  <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" />
-                </div>
-                <span className="text-xs font-mono font-bold text-slate-400 border-l border-slate-800 pl-3">
-                  IresoJ-digital-computer-services-platfo.vercel.app/dashboard
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest">
-                  Live System Operating
-                </span>
-              </div>
+        <div className="space-y-12">
+          
+          {/* YE-BUNA Hero Section */}
+          <div className="bg-[#FAF8F5] dark:bg-slate-900 border border-stone-200/80 dark:border-slate-800 rounded-3xl p-8 sm:p-12 text-center space-y-8 relative overflow-hidden shadow-xs">
+            
+            <div className="max-w-xl mx-auto space-y-4">
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-800 dark:text-slate-100 leading-tight tracking-tight">
+                Publish, book computer services, and earn — all in one platform built for <span className="text-sky-600 dark:text-sky-400 font-serif italic underline decoration-sky-400 decoration-wavy">IresoJ Digital patrons & creators</span>.
+              </h1>
             </div>
 
-            {/* Animated Cards Grid */}
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto">
+              <button 
+                onClick={() => window.location.hash = '#start'}
+                className="w-full sm:w-auto bg-slate-950 hover:bg-slate-800 dark:bg-amber-400 dark:hover:bg-amber-300 text-white dark:text-slate-950 font-bold px-8 py-4 rounded-full shadow-lg hover:scale-105 transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Start my page</span>
+                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+              </button>
+
+              <button 
+                onClick={() => window.location.hash = '#marketplace'}
+                className="w-full sm:w-auto border border-stone-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-stone-100 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-bold px-8 py-4 rounded-full transition-all text-sm flex items-center justify-center gap-2 shadow-2xs cursor-pointer"
+              >
+                <span>Browse marketplace</span>
+              </button>
+            </div>
+
+            {/* Social Proof with Fresh High-Res Portrait Avatars */}
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <div className="flex -space-x-2 overflow-hidden p-0.5">
+                <img className="inline-block h-9 w-9 rounded-full ring-2 ring-amber-400 object-cover shadow-sm" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200" alt="Creator 1" />
+                <img className="inline-block h-9 w-9 rounded-full ring-2 ring-amber-400 object-cover shadow-sm" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200" alt="Creator 2" />
+                <img className="inline-block h-9 w-9 rounded-full ring-2 ring-amber-400 object-cover shadow-sm" src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200" alt="Creator 3" />
+                <img className="inline-block h-9 w-9 rounded-full ring-2 ring-amber-400 object-cover shadow-sm" src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200" alt="Creator 4" />
+                <div className="h-9 w-9 rounded-full bg-amber-400 text-slate-950 font-black text-xs flex items-center justify-center ring-2 ring-amber-300 shadow-sm">
+                  ★
+                </div>
+              </div>
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                <strong className="text-slate-900 dark:text-white font-black">Free to start</strong> · No monthly fees
+              </span>
+            </div>
+          </div>
+
+          {/* Feature Ticker Strip — Thick Bold Black Header */}
+          <div className="bg-slate-950 border-y border-amber-500/40 py-3.5 text-amber-300 overflow-x-auto shadow-md">
+            <div className="flex items-center justify-center min-w-max space-x-6 text-xs sm:text-sm font-black tracking-wider uppercase px-4">
+              <span className="text-white font-black">Content Rewards</span>
+              <span className="text-amber-500">•</span>
+              <span className="text-amber-300 font-black">Instant Payouts</span>
+              <span className="text-amber-500">•</span>
+              <span className="text-white font-black">Book Sales</span>
+              <span className="text-amber-500">•</span>
+              <span className="text-amber-300 font-black">Digital Products</span>
+              <span className="text-amber-500">•</span>
+              <span className="text-emerald-400 font-black">Services & Telebirr</span>
+            </div>
+          </div>
+
+          {/* Just Arrived! Section */}
+          <div className="space-y-6 pt-4">
+            <div className="space-y-2">
+              <div className="text-[11px] font-mono font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400">
+                — NEW ARRIVALS
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-3xl sm:text-4xl font-serif italic font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <span>🔥</span>
+                  <span>Just Arrived!</span>
+                </h2>
+                <button 
+                  onClick={() => window.location.hash = '#store'}
+                  className="border border-stone-300 dark:border-slate-700 hover:bg-stone-100 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-bold px-6 py-2.5 rounded-full text-xs flex items-center gap-2 transition-all self-start sm:self-auto cursor-pointer"
+                >
+                  <span>View all</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                Discover our latest physical product releases from top Ethiopian creators.
+              </p>
+            </div>
+
+            {/* Showcase Grid of Physical & Digital Products */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               
-              {/* Card 1: Web Development & Website Login Prep */}
-              <motion.div 
-                whileHover={{ y: -5, scale: 1.02 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="p-2.5 bg-sky-500/10 text-sky-400 rounded-xl">
-                    <Code2 className="w-5 h-5" />
-                  </div>
-                  <span className="text-[10px] font-mono font-bold text-sky-400 bg-sky-950 px-2 py-0.5 rounded-full border border-sky-800">
-                    Template Ready
+              {/* Product 1 */}
+              <div className="bg-white dark:bg-slate-900 border border-stone-200/80 dark:border-slate-800 rounded-3xl p-5 space-y-4 shadow-sm hover:shadow-md transition-all group">
+                <div className="h-44 rounded-2xl bg-amber-50 dark:bg-amber-950/40 overflow-hidden relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&q=80&w=600" 
+                    alt="Ethiopian Leather Notebook" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <span className="absolute top-3 left-3 bg-slate-950 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                    Physical Release
                   </span>
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-white">Web Dev & Login Preparation</h4>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Pre-configured project structures with secure authentication, Express backend, and responsive UI layouts.
+                  <div className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400 uppercase">
+                    By Jemal Fano (IresoJ)
+                  </div>
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white mt-0.5">
+                    Hand-Crafted Genuine Ethiopian Leather Journal
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                    Full-grain Ethiopian leather notebook with traditional Ethiopian bindery. Perfect for creators, daily logs, and sketchbooks.
                   </p>
                 </div>
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-300">
-                  <span>Starter Templates</span>
-                  <strong className="text-sky-400">100% Free Access</strong>
+                <div className="flex items-center justify-between pt-2 border-t border-stone-100 dark:border-slate-800">
+                  <span className="font-black text-slate-900 dark:text-white text-sm">
+                    1,200 ETB
+                  </span>
+                  <button className="bg-slate-950 hover:bg-slate-800 text-white dark:bg-amber-400 dark:text-slate-950 font-bold text-xs px-4 py-2 rounded-full cursor-pointer transition-all">
+                    Buy Now
+                  </button>
                 </div>
-              </motion.div>
+              </div>
 
-              {/* Card 2: Educational Books & Documentation Videos */}
-              <motion.div 
-                whileHover={{ y: -5, scale: 1.02 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl">
-                    <BookOpen className="w-5 h-5" />
-                  </div>
-                  <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-800">
-                    Academy
+              {/* Product 2 */}
+              <div className="bg-white dark:bg-slate-900 border border-stone-200/80 dark:border-slate-800 rounded-3xl p-5 space-y-4 shadow-sm hover:shadow-md transition-all group">
+                <div className="h-44 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 overflow-hidden relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1526738549149-8e07eca6c147?auto=format&fit=crop&q=80&w=600" 
+                    alt="Computer Accessories Kit" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <span className="absolute top-3 left-3 bg-indigo-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                    Tech Hardware
                   </span>
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-white">Books & Video Masterclasses</h4>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Step-by-step PDF handbooks and documentation video guides covering modern software and agricultural tech.
+                  <div className="text-[10px] font-mono font-bold text-indigo-600 dark:text-indigo-400 uppercase">
+                    By IresoJ Tech Hub
+                  </div>
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white mt-0.5">
+                    High-Performance SSD & RAM Upgrade Kit
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                    Tested hardware kit for computer service stations in Ethiopia with warranty and installation guide included.
                   </p>
                 </div>
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-300">
-                  <span>Video Tutorials</span>
-                  <strong className="text-emerald-400">Published Free</strong>
+                <div className="flex items-center justify-between pt-2 border-t border-stone-100 dark:border-slate-800">
+                  <span className="font-black text-slate-900 dark:text-white text-sm">
+                    3,500 ETB
+                  </span>
+                  <button className="bg-slate-950 hover:bg-slate-800 text-white dark:bg-amber-400 dark:text-slate-950 font-bold text-xs px-4 py-2 rounded-full cursor-pointer transition-all">
+                    Order Kit
+                  </button>
                 </div>
-              </motion.div>
+              </div>
 
-              {/* Card 3: 2% Affiliate Referral Commission */}
-              <motion.div 
-                whileHover={{ y: -5, scale: 1.02 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-xl">
-                    <Percent className="w-5 h-5" />
-                  </div>
-                  <span className="text-[10px] font-mono font-bold text-amber-400 bg-amber-950 px-2 py-0.5 rounded-full border border-amber-800">
-                    2% Earn Rate
+              {/* Product 3 */}
+              <div className="bg-white dark:bg-slate-900 border border-stone-200/80 dark:border-slate-800 rounded-3xl p-5 space-y-4 shadow-sm hover:shadow-md transition-all group">
+                <div className="h-44 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 overflow-hidden relative">
+                  <img 
+                    src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600" 
+                    alt="Digital Starter Kit" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <span className="absolute top-3 left-3 bg-emerald-600 text-white text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider">
+                    Digital Download
                   </span>
                 </div>
                 <div>
-                  <h4 className="font-bold text-sm text-white">Creator Partner Program</h4>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Link your source product or website to receive an automatic 2% referral commission on every successful customer booking.
+                  <div className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase">
+                    By Dure Boru Academy
+                  </div>
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white mt-0.5">
+                    Full Ethiopian Creator Handbook & Source Bundle
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                    Complete digital publishing guide, Telebirr payment integration code, and graphic layout templates.
                   </p>
                 </div>
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-300">
-                  <span>Commission Rate</span>
-                  <strong className="text-amber-400">2% Per Sale</strong>
+                <div className="flex items-center justify-between pt-2 border-t border-stone-100 dark:border-slate-800">
+                  <span className="font-black text-slate-900 dark:text-white text-sm">
+                    FREE / 0 ETB
+                  </span>
+                  <button className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-4 py-2 rounded-full cursor-pointer transition-all">
+                    Download PDF
+                  </button>
                 </div>
-              </motion.div>
+              </div>
 
             </div>
           </div>
+
         </div>
       )}
 

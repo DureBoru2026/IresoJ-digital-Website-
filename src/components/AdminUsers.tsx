@@ -18,7 +18,8 @@ import {
   ShieldCheck, 
   Printer, 
   Star,
-  FileText
+  FileText,
+  Download
 } from 'lucide-react';
 import { CustomerRecord, Booking, Transaction, Feedback } from '../types';
 import { formatETB } from '../utils';
@@ -40,7 +41,7 @@ export default function AdminUsers({
 }: AdminUsersProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCustomerModal, setActiveCustomerModal] = useState<CustomerRecord | null>(null);
-  const [modalTab, setModalTab] = useState<'all' | 'bookings' | 'purchases' | 'feedback'>('all');
+  const [modalTab, setModalTab] = useState<'all' | 'timeline' | 'bookings' | 'purchases' | 'feedback'>('all');
 
   const filteredCustomers = customers.filter(c => {
     if (!c) return false;
@@ -155,6 +156,40 @@ export default function AdminUsers({
     printWindow.document.close();
   };
 
+  // Export Customer Book CRM data to CSV
+  const exportCustomersCSV = () => {
+    const headers = [
+      'Customer Name',
+      'Contact (Phone / Email)',
+      'Acquisition Source',
+      'Total Transactions / Orders',
+      'Total Spent (ETB)',
+      'VIP Status'
+    ];
+
+    const rows = filteredCustomers.map(c => [
+      c.name || '',
+      c.contact || '',
+      c.source || '',
+      c.transactionsCount || 0,
+      c.spentAmount || 0,
+      (c.spentAmount || 0) >= 2000 ? 'VIP Platinum' : 'Standard'
+    ]);
+
+    const escapeCell = (val: any) => `"${String(val ?? '').replace(/"/g, '""')}"`;
+    const csvContent = [headers.map(escapeCell).join(','), ...rows.map(r => r.map(escapeCell).join(','))].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `iresoj_customer_crm_book_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   // Stats calculation
   const totalLeads = customers.length;
   const highValueBuyers = customers.filter(c => c.spentAmount >= 2000).length;
@@ -174,13 +209,24 @@ export default function AdminUsers({
           </p>
         </div>
 
-        <button
-          onClick={onRefresh}
-          className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 transition-all flex items-center space-x-1.5 text-xs font-semibold cursor-pointer"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Refresh Book</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportCustomersCSV}
+            disabled={filteredCustomers.length === 0}
+            className="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 disabled:opacity-50 text-slate-950 text-xs font-black rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer border border-amber-500/30"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>Export to CSV ({filteredCustomers.length})</span>
+          </button>
+
+          <button
+            onClick={onRefresh}
+            className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-600 transition-all flex items-center space-x-1.5 text-xs font-semibold cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Refresh Book</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -405,16 +451,27 @@ export default function AdminUsers({
             </div>
 
             {/* Modal Tabs */}
-            <div className="px-6 pt-3 bg-white border-b border-slate-100 flex gap-2">
+            <div className="px-6 pt-3 bg-white border-b border-slate-100 flex gap-2 overflow-x-auto">
               <button
                 onClick={() => setModalTab('all')}
-                className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors ${
+                className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors whitespace-nowrap ${
                   modalTab === 'all'
                     ? 'border-sky-500 text-sky-600'
                     : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
               >
-                Full Activity Timeline
+                Snapshot
+              </button>
+              <button
+                onClick={() => setModalTab('timeline')}
+                className={`px-4 py-2.5 text-xs font-bold border-b-2 transition-colors flex items-center gap-1.5 whitespace-nowrap ${
+                  modalTab === 'timeline'
+                    ? 'border-sky-500 text-sky-600'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>Interaction Timeline</span>
               </button>
               <button
                 onClick={() => setModalTab('bookings')}
@@ -459,6 +516,47 @@ export default function AdminUsers({
 
             {/* Modal Tab Contents */}
             <div className="p-6 overflow-y-auto space-y-6 flex-1 bg-slate-50/50">
+
+              {/* SECTION 0: Chronological Interaction Timeline */}
+              {modalTab === 'timeline' && (
+                <div className="space-y-4">
+                  <h4 className="font-bold text-xs uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-sky-500" />
+                    <span>Chronological Interaction History</span>
+                  </h4>
+                  
+                  <div className="relative space-y-4 before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent">
+                    {(() => {
+                      const timeline = [
+                        ...customerBookings.map(b => ({ ...b, type: 'booking' as const, sortDate: new Date(b.date || b.bookingDate) })),
+                        ...customerTransactions.map(t => ({ ...t, type: 'transaction' as const, sortDate: new Date(t.date || 0) })),
+                        ...customerFeedback.map(f => ({ ...f, type: 'feedback' as const, sortDate: new Date(f.date) }))
+                      ].sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime());
+
+                      if (timeline.length === 0) return <p className="text-center py-12 text-slate-400 text-xs italic">No interactions logged for this timeline.</p>;
+
+                      return timeline.map((item, idx) => (
+                        <div key={idx} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-200 group-hover:bg-sky-500 group-hover:text-white text-slate-500 transition-colors shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                            {item.type === 'booking' ? <Wrench className="w-4 h-4" /> : item.type === 'transaction' ? <ShoppingCart className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
+                          </div>
+                          <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <div className="flex items-center justify-between space-x-2 mb-1">
+                              <div className="font-bold text-slate-900 text-sm">{item.type === 'booking' ? (item as Booking).serviceTitle : item.type === 'transaction' ? (item as Transaction).purpose : 'Feedback Inquiry'}</div>
+                              <time className="font-mono text-[10px] text-sky-600 font-bold">{item.sortDate.toLocaleDateString()}</time>
+                            </div>
+                            <div className="text-slate-500 text-xs line-clamp-2">
+                              {item.type === 'booking' ? `Status: ${(item as Booking).status.toUpperCase()} • Slot: ${(item as Booking).bookingTime}` : 
+                               item.type === 'transaction' ? `Amount: ${formatETB((item as Transaction).amount)} • Status: ${(item as Transaction).status.toUpperCase()}` : 
+                               (item as Feedback).message}
+                            </div>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              )}
 
               {/* SECTION 1: Repair Bookings */}
               {(modalTab === 'all' || modalTab === 'bookings') && (

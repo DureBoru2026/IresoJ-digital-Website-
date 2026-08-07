@@ -206,14 +206,27 @@ export default function SuccessStoriesCarousel({ lang, onNavigateToContact }: Su
                 {/* Author Avatar and metadata */}
                 <div className="flex items-center justify-between flex-wrap gap-4 pt-2">
                   <div className="flex items-center space-x-3 text-left">
-                    <div className="w-11 h-11 rounded-2xl bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 flex items-center justify-center font-bold text-[#0EA5E9] shadow-inner shrink-0">
-                      {avatarChar}
+                    {/* Real Human Avatar Photo */}
+                    <div className="relative shrink-0">
+                      <img 
+                        src={`https://images.unsplash.com/photo-${
+                          activeIndex % 4 === 0 ? '1534528741775-53994a69daeb' :
+                          activeIndex % 4 === 1 ? '1507003211169-0a1dd7228f2d' :
+                          activeIndex % 4 === 2 ? '1573496359142-b8d87734a5a2' :
+                          '1500648767791-00dcc994a43e'
+                        }?auto=format&fit=crop&q=80&w=200`}
+                        alt={currentStory.name}
+                        className="w-12 h-12 rounded-2xl object-cover border-2 border-amber-400 shadow-sm"
+                      />
+                      <div className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-950 p-0.5 rounded-md text-[9px] font-black">
+                        ✓
+                      </div>
                     </div>
                     <div>
-                      <strong className="block text-slate-800 text-sm font-sans tracking-tight">
+                      <strong className="block text-slate-800 text-sm font-sans tracking-tight font-black">
                         {currentStory.name}
                       </strong>
-                      <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block mt-0.5">
+                      <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block mt-0.5 font-bold">
                         {t.authorTitle}
                       </span>
                     </div>

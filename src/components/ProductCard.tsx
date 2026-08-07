@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Info, ShoppingCart, QrCode, X, Copy, CheckCircle } from 'lucide-react';
+import { Sparkles, Info, ShoppingCart, QrCode, X, Copy, CheckCircle, Bell, BellRing } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { ProductService } from '../types';
 
@@ -10,9 +10,14 @@ interface ProductCardProps {
   product?: ProductService;
   onSelect?: (product: ProductService) => void;
   isLoading?: boolean;
+  isWatched?: boolean;
+  onToggleWatch?: (productId: string, currentPrice: number) => void;
 }
 
-export default function ProductCard({ product, onSelect, isLoading }: ProductCardProps) {
+export default function ProductCard({ product, onSelect, isLoading, isWatched, onToggleWatch }: ProductCardProps) {
+  const [showQR, setShowQR] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   if (isLoading) {
     return (
       <div className="relative bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden h-full">
@@ -40,9 +45,6 @@ export default function ProductCard({ product, onSelect, isLoading }: ProductCar
   }
 
   if (!product || !onSelect) return null;
-
-  const [showQR, setShowQR] = useState(false);
-  const [copied, setCopied] = useState(false);
   
   const getCategoryLabel = (category: string) => {
     switch (category) {
@@ -103,17 +105,37 @@ export default function ProductCard({ product, onSelect, isLoading }: ProductCar
         </div>
 
         {/* QR Code trigger button */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowQR(true);
-          }}
-          className="absolute top-3 right-3 w-8 h-8 bg-white/95 text-slate-700 hover:text-[#0EA5E9] hover:bg-white rounded-full flex items-center justify-center border border-slate-200/80 shadow-md hover:scale-105 transition-all duration-200 z-10 cursor-pointer"
-          title="Scan QR to open details on mobile"
-        >
-          <QrCode className="w-4 h-4" />
-        </button>
+        <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowQR(true);
+            }}
+            className="w-8 h-8 bg-white/95 text-slate-700 hover:text-[#0EA5E9] hover:bg-white rounded-full flex items-center justify-center border border-slate-200/80 shadow-md hover:scale-105 transition-all duration-200 cursor-pointer"
+            title="Scan QR to open details on mobile"
+          >
+            <QrCode className="w-4 h-4" />
+          </button>
+
+          {onToggleWatch && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleWatch(product.id, product.price);
+              }}
+              className={`w-8 h-8 rounded-full flex items-center justify-center border shadow-md hover:scale-110 transition-all duration-200 cursor-pointer ${
+                isWatched 
+                  ? 'bg-amber-400 border-amber-500 text-amber-950' 
+                  : 'bg-white/95 border-slate-200/80 text-slate-500 hover:text-amber-500 hover:bg-white'
+              }`}
+              title={isWatched ? 'Unsubscribe from price drops' : 'Notify me on price drop'}
+            >
+              {isWatched ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+            </button>
+          )}
+        </div>
         
         {product.stock !== null && (
           <div className="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[10px] font-mono">

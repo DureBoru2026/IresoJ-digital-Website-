@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Copy, Check, Info, ShieldCheck, CreditCard, Send, QrCode, Languages } from 'lucide-react';
+import { X, Copy, Check, Info, ShieldCheck, CreditCard, Send, QrCode, Languages, Printer, Share2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import PaymentQRCode from './PaymentQRCode';
+import PhysicalReceiptModal, { ReceiptData } from './PhysicalReceiptModal';
 import { ProductService, Transaction } from '../types';
 import { formatETB } from '../utils';
 import { PAYMENT_CONFIG } from '../config';
@@ -31,10 +32,14 @@ export default function PaymentModal({ product, onClose, onSubmitTransaction }: 
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+  const [showShareQR, setShowShareQR] = useState(false);
 
   const config = gateway === 'telebirr' ? PAYMENT_CONFIG.telebirr : PAYMENT_CONFIG.cbeBirr;
   const MERCHANT_TELEBIRR = PAYMENT_CONFIG.telebirr.accountNumber;
   const MERCHANT_CBE_BIRR = PAYMENT_CONFIG.cbeBirr.accountNumber; // Using accountNumber as reference
+
+  const shareUrl = `${window.location.origin}${window.location.pathname}?productId=${product.id}`;
 
   const handleCopy = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
@@ -126,12 +131,53 @@ export default function PaymentModal({ product, onClose, onSubmitTransaction }: 
               referrerPolicy="no-referrer"
               className="w-full h-40 object-cover rounded-xl shadow-sm border border-slate-200/60 mb-4"
             />
-            <h3 className="font-display font-bold text-slate-900 leading-snug">
-              {product.title}
-            </h3>
-            <p className="text-xs text-slate-500 mt-1 line-clamp-3">
-              {product.description}
-            </p>
+            
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <h3 className="font-display font-bold text-slate-900 leading-snug">
+                {product.title}
+              </h3>
+              <button
+                onClick={() => setShowShareQR(!showShareQR)}
+                className={`p-2 rounded-xl border transition-all flex items-center gap-1.5 ${
+                  showShareQR 
+                    ? 'bg-sky-50 border-sky-200 text-sky-600' 
+                    : 'bg-white border-slate-200 text-slate-500 hover:text-sky-600 hover:border-sky-200'
+                }`}
+                title="Scan QR to order/share"
+              >
+                <QrCode className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:inline">Scan & Order</span>
+              </button>
+            </div>
+
+            {showShareQR ? (
+              <div className="bg-white p-4 rounded-2xl border border-sky-100 shadow-sm animate-in zoom-in duration-200 flex flex-col items-center gap-3">
+                <QRCodeSVG 
+                  value={shareUrl}
+                  size={140}
+                  level="H"
+                  includeMargin={true}
+                  className="rounded-lg"
+                />
+                <div className="text-center space-y-1">
+                  <p className="text-[10px] font-bold text-sky-700 uppercase tracking-widest">Scan to Order In-Store</p>
+                  <p className="text-[9px] text-slate-400 font-mono break-all line-clamp-1 max-w-[160px]">
+                    {shareUrl}
+                  </p>
+                  <button 
+                    onClick={() => handleCopy(shareUrl, 'link')}
+                    className="text-[10px] font-bold text-sky-500 flex items-center gap-1 mx-auto hover:text-sky-600 transition-colors mt-1"
+                  >
+                    {copiedText === 'link' ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                    <span>{copiedText === 'link' ? 'Copied!' : 'Copy URL'}</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500 mt-1 line-clamp-3">
+                {product.description}
+              </p>
+            )}
           </div>
 
           <div className="mt-6 pt-4 border-t border-slate-200">
@@ -339,12 +385,46 @@ export default function PaymentModal({ product, onClose, onSubmitTransaction }: 
                   <Send className="w-4 h-4" />
                   <span>{submitting ? 'Verifying Reference...' : 'Submit Transaction Reference'}</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReceiptData({
+                    receiptNumber: `REC-${Date.now().toString().slice(-6)}`,
+                    customerName: customerName || 'Valued Customer',
+                    customerPhone: customerPhone || 'N/A',
+                    date: new Date().toLocaleString(),
+                    paymentGateway: gateway,
+                    referenceNumber: referenceNumber || 'PENDING-VERIFICATION',
+                    items: [{
+                      id: product.id,
+                      description: product.title,
+                      quantity: 1,
+                      unitPrice: product.price,
+                      totalPrice: product.price
+                    }],
+                    subtotal: product.price,
+                    tax: 0,
+                    totalAmount: product.price,
+                    purpose: product.title
+                  })}
+                  className="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-xs cursor-pointer border border-amber-500/30 mt-2"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>Print Physical Receipt Preview</span>
+                </button>
               </form>
             )}
           </div>
 
         </div>
       </div>
+
+      {receiptData && (
+        <PhysicalReceiptModal
+          receipt={receiptData}
+          onClose={() => setReceiptData(null)}
+        />
+      )}
     </div>
   );
 }

@@ -13,6 +13,7 @@ interface AdminProductsProps {
 export default function AdminProducts({ products, onAddProduct, onUpdateProduct, onDeleteProduct }: AdminProductsProps) {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
   // Form States
   const [title, setTitle] = useState('');
@@ -27,6 +28,40 @@ export default function AdminProducts({ products, onAddProduct, onUpdateProduct,
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === products.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(products.map(p => p.id));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} items?`)) return;
+
+    setLoading(true);
+    let successCount = 0;
+    for (const id of selectedIds) {
+      const success = await onDeleteProduct(id);
+      if (success) successCount++;
+    }
+
+    setMessage({ 
+      text: `Successfully deleted ${successCount} of ${selectedIds.length} items.`, 
+      type: successCount === selectedIds.length ? 'success' : 'error' 
+    });
+    setSelectedIds([]);
+    setLoading(false);
+    setTimeout(() => setMessage(null), 3000);
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -379,90 +414,134 @@ export default function AdminProducts({ products, onAddProduct, onUpdateProduct,
         </form>
       ) : (
         /* Catalog Items List */
-        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-55/60 border-b border-slate-100 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  <th className="p-4 pl-6">Preview & Title</th>
-                  <th className="p-4">Category</th>
-                  <th className="p-4">Type</th>
-                  <th className="p-4">Price</th>
-                  <th className="p-4">Stock Status</th>
-                  <th className="p-4 pr-6 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
-                {products.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="p-12 text-center text-slate-400 font-mono text-xs">
-                      No products found in the catalog.
-                    </td>
+        <div className="space-y-4">
+          {selectedIds.length > 0 && (
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 p-4 rounded-2xl flex items-center justify-between animate-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                  {selectedIds.length} Items Selected
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={loading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-sm shadow-red-200 disabled:opacity-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Selected</span>
+                </button>
+                <button
+                  onClick={() => setSelectedIds([])}
+                  className="px-3 py-1.5 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border border-slate-200 dark:border-slate-700"
+                >
+                  Deselect All
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-55/60 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    <th className="p-4 pl-6 w-10">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedIds.length === products.length && products.length > 0}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      />
+                    </th>
+                    <th className="p-4">Preview & Title</th>
+                    <th className="p-4">Category</th>
+                    <th className="p-4">Type</th>
+                    <th className="p-4">Price</th>
+                    <th className="p-4">Stock Status</th>
+                    <th className="p-4 pr-6 text-right">Actions</th>
                   </tr>
-                ) : (
-                  products.filter(p => p && p.title).map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="p-4 pl-6 flex items-center space-x-3">
-                        <img 
-                          src={p.imageUrl} 
-                          alt={p.title} 
-                          referrerPolicy="no-referrer"
-                          className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0"
-                        />
-                        <div>
-                          <span className="font-bold text-slate-900 block line-clamp-1">{p.title}</span>
-                          <span className="text-[10px] text-slate-400 font-mono uppercase">{p.id}</span>
-                        </div>
-                      </td>
-                      <td className="p-4 capitalize">
-                        <span className="text-xs px-2.5 py-1 bg-slate-100 rounded-full font-medium">
-                          {p.category.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td className="p-4 capitalize text-xs font-mono text-slate-500">
-                        {p.type}
-                      </td>
-                      <td className="p-4">
-                        <span className="font-bold text-slate-900">{formatETB(p.price)}</span>
-                      </td>
-                      <td className="p-4">
-                        {p.type === 'physical' ? (
-                          p.stock !== null && p.stock > 0 ? (
-                            <span className="text-xs text-green-700 font-semibold bg-green-50 px-2 py-0.5 rounded-full">
-                              {p.stock} units
-                            </span>
-                          ) : (
-                            <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded-full">
-                              Out of stock
-                            </span>
-                          )
-                        ) : (
-                          <span className="text-xs text-slate-400">Unlimited (Service)</span>
-                        )}
-                      </td>
-                      <td className="p-4 pr-6 text-right">
-                        <div className="flex items-center justify-end space-x-1">
-                          <button
-                            onClick={() => handleStartEdit(p)}
-                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-                            title="Edit Item"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => confirmDelete(p.id)}
-                            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                            title="Delete Item"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm text-slate-700 dark:text-slate-300">
+                  {products.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-12 text-center text-slate-400 font-mono text-xs">
+                        No products found in the catalog.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    products.filter(p => p && p.title).map((p) => (
+                      <tr key={p.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors ${selectedIds.includes(p.id) ? 'bg-blue-50/30 dark:bg-blue-900/10' : ''}`}>
+                        <td className="p-4 pl-6">
+                          <input 
+                            type="checkbox" 
+                            checked={selectedIds.includes(p.id)}
+                            onChange={() => toggleSelect(p.id)}
+                            className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          />
+                        </td>
+                        <td className="p-4 flex items-center space-x-3">
+                          <img 
+                            src={p.imageUrl} 
+                            alt={p.title} 
+                            referrerPolicy="no-referrer"
+                            className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-700 shrink-0"
+                          />
+                          <div>
+                            <span className="font-bold text-slate-900 dark:text-white block line-clamp-1">{p.title}</span>
+                            <span className="text-[10px] text-slate-400 font-mono uppercase">{p.id}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 capitalize">
+                          <span className="text-xs px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-full font-medium">
+                            {p.category.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="p-4 capitalize text-xs font-mono text-slate-500 dark:text-slate-400">
+                          {p.type}
+                        </td>
+                        <td className="p-4">
+                          <span className="font-bold text-slate-900 dark:text-white">{formatETB(p.price)}</span>
+                        </td>
+                        <td className="p-4">
+                          {p.type === 'physical' ? (
+                            p.stock !== null && p.stock > 0 ? (
+                              <span className="text-xs text-green-700 dark:text-green-400 font-semibold bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded-full">
+                                {p.stock} units
+                              </span>
+                            ) : (
+                              <span className="text-xs text-red-600 dark:text-red-400 font-semibold bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full">
+                                Out of stock
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-xs text-slate-400 dark:text-slate-500">Unlimited (Service)</span>
+                          )}
+                        </td>
+                        <td className="p-4 pr-6 text-right">
+                          <div className="flex items-center justify-end space-x-1">
+                            <button
+                              onClick={() => handleStartEdit(p)}
+                              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 rounded-lg transition-all"
+                              title="Edit Item"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => confirmDelete(p.id)}
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-slate-800 rounded-lg transition-all"
+                              title="Delete Item"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
