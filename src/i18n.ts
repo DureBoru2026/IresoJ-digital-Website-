@@ -1,10 +1,16 @@
 export type Language = 'en' | 'om' | 'am';
 
 export const translations = {
-  en: {
-    home: 'Home',
-    aboutUs: 'About Us',
-    services: 'Services & Products',
+    en: {
+    corpID: 'Corporate ID Card',
+    magLayout: 'Magazine Layout',
+    bizBooklet: 'Business Booklet',
+    eventPoster: 'Event Poster',
+    contentRewards: 'Content Rewards',
+    instantPayouts: 'Instant Payouts',
+    support: 'Support',
+    home: 'Home',    aboutUs: 'About Us',
+    services: 'Services & Telebirr',
     news: 'Announcements',
     contact: 'Contact Us',
     admin: 'Admin Panel',
@@ -123,10 +129,16 @@ export const translations = {
     inquiryPhoneLineLabel: 'Inquiry Phone Line',
     supportEmailLabel: 'Support Email'
   },
-  am: {
-    home: 'መነሻ',
-    aboutUs: 'ስለ እኛ',
-    services: 'አገልግሎቶች እና ምርቶች',
+    am: {
+    corpID: 'የድርጅት መታወቂያ ካርድ',
+    magLayout: 'የመጽሔት ዝግጅት',
+    bizBooklet: 'የንግድ ቡክሌት',
+    eventPoster: 'የክስተት ፖስተር',
+    contentRewards: 'የይዘት ሽልማቶች',
+    instantPayouts: 'ፈጣን ክፍያዎች',
+    support: 'ድጋፍ',
+    home: 'መነሻ',    aboutUs: 'ስለ እኛ',
+    services: 'አገልግሎቶች እና ቴሌብር',
     news: 'ማስታወቂያዎች',
     contact: 'ያግኙን',
     admin: 'አስተዳዳሪ',
@@ -245,10 +257,16 @@ export const translations = {
     inquiryPhoneLineLabel: 'የጥያቄ ስልክ መስመር',
     supportEmailLabel: 'የድጋፍ ኢሜል'
   },
-  om: {
-    home: 'Mana',
-    aboutUs: 'Waa\'ee Keenya',
-    services: 'Tajaajilawwan fi Oomishaa',
+    om: {
+    corpID: 'Waraqaa Eenyummaa Dhaabbataa',
+    magLayout: 'Qophii Magaazinaa',
+    bizBooklet: 'Brooshuraa Bizinesii',
+    eventPoster: 'Poostarii Taphaa',
+    contentRewards: 'Badhaasa Qabiyyee',
+    instantPayouts: 'Kaffaltii Saffisaa',
+    support: 'Gargaarsa',
+    home: 'Mana',    aboutUs: 'Waa\'ee Keenya',
+    services: 'Tajaajila & Telebirr',
     news: 'Beeksisa',
     contact: 'Nu Quunnamaa',
     admin: 'To\'annoo',

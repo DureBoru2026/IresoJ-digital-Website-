@@ -242,21 +242,6 @@ export default function HomeDashboardShowcase() {
             </div>
           </div>
 
-          {/* Feature Ticker Strip — Thick Bold Black Header */}
-          <div className="bg-slate-950 border-y border-amber-500/40 py-3.5 text-amber-300 overflow-x-auto shadow-md">
-            <div className="flex items-center justify-center min-w-max space-x-6 text-xs sm:text-sm font-black tracking-wider uppercase px-4">
-              <span className="text-white font-black">Content Rewards</span>
-              <span className="text-amber-500">•</span>
-              <span className="text-amber-300 font-black">Instant Payouts</span>
-              <span className="text-amber-500">•</span>
-              <span className="text-white font-black">Book Sales</span>
-              <span className="text-amber-500">•</span>
-              <span className="text-amber-300 font-black">Digital Products</span>
-              <span className="text-amber-500">•</span>
-              <span className="text-emerald-400 font-black">Services & Telebirr</span>
-            </div>
-          </div>
-
           {/* Just Arrived! Section */}
           <div className="space-y-6 pt-4">
             <div className="space-y-2">

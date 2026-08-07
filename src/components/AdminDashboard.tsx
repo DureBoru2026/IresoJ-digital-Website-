@@ -317,15 +317,15 @@ export default function AdminDashboard({
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 bg-gradient-to-br from-white via-sky-50/40 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 p-4 sm:p-6 rounded-3xl border border-sky-100/80 dark:border-slate-800/80 shadow-sm">
+    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 bg-gradient-to-br from-white via-indigo-50/30 to-slate-50 dark:from-slate-950 dark:via-indigo-950/10 dark:to-slate-950 p-4 sm:p-6 rounded-3xl border border-indigo-100/80 dark:border-indigo-900/30 shadow-sm">
       
       {/* Daily Summary Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white font-display">Command Center</h2>
-            <span className="text-[10px] font-mono font-bold uppercase bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h2 className="text-2xl font-black text-indigo-950 dark:text-indigo-100 font-display">Command Center</h2>
+            <span className="text-[10px] font-mono font-bold uppercase bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
               Live Sync
             </span>
           </div>
@@ -338,7 +338,7 @@ export default function AdminDashboard({
             <button
               onClick={toggleTheme}
               title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 text-white dark:bg-amber-400 dark:text-slate-950 font-black text-xs transition-all shadow-md hover:scale-105 cursor-pointer"
+              className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-950 text-white dark:bg-amber-400 dark:text-slate-950 font-black text-xs transition-all shadow-md hover:scale-105 cursor-pointer"
             >
               {theme === 'dark' ? (
                 <>
@@ -355,17 +355,17 @@ export default function AdminDashboard({
           )}
 
           {/* Last Updated Timestamp Visual Indicator */}
-          <div className="flex items-center gap-2 bg-white px-3.5 py-2 rounded-xl border border-slate-200/80 shadow-2xs text-xs font-mono">
+          <div className="flex items-center gap-2 bg-white dark:bg-slate-900 px-3.5 py-2 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-2xs text-xs font-mono">
             <Clock className="w-3.5 h-3.5 text-slate-400" />
             <span className="text-slate-400 font-semibold">Last Updated:</span>
-            <span className="font-bold text-slate-800">{lastUpdated || localLastUpdated}</span>
+            <span className="font-bold text-slate-800 dark:text-indigo-200">{lastUpdated || localLastUpdated}</span>
           </div>
 
           {/* Refresh Button */}
           <button
             onClick={handleManualRefresh}
             disabled={isRefreshing}
-            className="flex items-center gap-2 bg-sky-600 hover:bg-sky-500 active:scale-95 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md shadow-sky-200/60 transition-all cursor-pointer disabled:opacity-60"
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md shadow-indigo-200/40 transition-all cursor-pointer disabled:opacity-60"
             title="Manually trigger re-fetch of all administrative data"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -376,7 +376,7 @@ export default function AdminDashboard({
           <button
             onClick={handleExportCSV}
             disabled={isGeneratingCSV}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md shadow-emerald-200/60 transition-all cursor-pointer disabled:opacity-60"
+            className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 active:scale-95 text-white px-4 py-2 rounded-xl font-bold text-xs shadow-md shadow-slate-200/40 transition-all cursor-pointer disabled:opacity-60"
             title="Download current bookings and transaction audit records as CSV"
           >
             {isGeneratingCSV ? (

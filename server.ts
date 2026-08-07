@@ -6,7 +6,7 @@ import { createServer as createViteServer } from 'vite';
 import { db, ProductService, Announcement, Feedback, Transaction, Booking } from './db-store.js';
 
 // Simple middleware to simulate admin authentication
-const ADMIN_TOKEN = 'es-digital-csc-admin-secret-session-token';
+const ADMIN_TOKEN = process.env.VITE_ADMIN_TOKEN || 'es-digital-csc-admin-secret-session-token';
 
 // In-memory brute force protection rate limiter for login
 interface LoginRateLimitRecord {
@@ -1068,29 +1068,41 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server is running on http://0.0.0.0:${PORT} (Express + Vite)`);
-
-    const WEEKLY_MS = 7 * 24 * 60 * 60 * 1000;
-    setInterval(async () => {
-      try {
-        console.log('⏰ Running Automated Weekly Database Backup...');
-        const [products, transactions, bookings, assets] = await Promise.all([db.getProducts(), db.getTransactions(), db.getBookings(), db.getAssets()]);
-        const jsonStr = JSON.stringify({ timestamp: new Date().toISOString(), counts: { products: products.length, transactions: transactions.length, bookings: bookings.length, assets: assets.length } });
-        await db.saveLogs([{ id: `log_autobackup_${Date.now()}`, adminUser: 'System Scheduler', action: 'Weekly Backup Executed', details: `Size: ${Buffer.byteLength(jsonStr)} bytes`, timestamp: new Date().toISOString(), severity: 'info' }, ...(await db.getLogs())]);
-      } catch (err) {
-        console.error('Failed automated weekly backup:', err);
-      }
-    }, WEEKLY_MS);
-  });
+  const WEEKLY_MS = 7 * 24 * 60 * 60 * 1000;
+  setInterval(async () => {
+    try {
+      console.log('⏰ Running Automated Weekly Database Backup...');
+      const [products, transactions, bookings, assets] = await Promise.all([db.getProducts(), db.getTransactions(), db.getBookings(), db.getAssets()]);
+      const jsonStr = JSON.stringify({ timestamp: new Date().toISOString(), counts: { products: products.length, transactions: transactions.length, bookings: bookings.length, assets: assets.length } });
+      await db.saveLogs([{ id: `log_autobackup_${Date.now()}`, adminUser: 'System Scheduler', action: 'Weekly Backup Executed', details: `Size: ${Buffer.byteLength(jsonStr)} bytes`, timestamp: new Date().toISOString(), severity: 'info' }, ...(await db.getLogs())]);
+    } catch (err) {
+      console.error('Failed automated weekly backup:', err);
+    }
+  }, WEEKLY_MS);
 
   // Global Error Handler
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     console.error('Unhandled Server Error:', err);
     res.status(500).json({ error: 'Internal Server Error', details: err.message });
   });
+
+  return app;
 }
 
-startServer().catch(err => {
-  console.error('Failed to start server:', err);
-});
+const appPromise = startServer();
+
+// Export the app for Vercel
+export default async (req: Request, res: Response) => {
+  const app = await appPromise;
+  return app(req, res);
+};
+
+// Start the server if running locally
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  appPromise.then(app => {
+    const PORT = Number(process.env.PORT || 3000);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server is running on http://0.0.0.0:${PORT} (Express + Vite)`);
+    });
+  });
+}

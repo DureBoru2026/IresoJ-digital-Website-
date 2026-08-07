@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   MessageSquare, 
   Send, 
@@ -127,72 +128,86 @@ export default function SupportMessagesView({
 
         {/* Message Thread Box */}
         <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-slate-50/50 dark:bg-slate-900/50">
-          {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-3">
-              <MessageSquare className="w-12 h-12 text-slate-300 dark:text-slate-700" />
-              <p className="font-bold text-sm text-slate-600 dark:text-slate-300">No messages in your thread yet.</p>
-              <p className="text-xs max-w-sm text-slate-400">
-                Type your message below to send an inquiry directly to our Kore Town staff. We respond within minutes!
-              </p>
-            </div>
-          ) : (
-            messages.map((msg) => {
-              const isUser = msg.senderRole === 'user';
-              return (
-                <div key={msg.id} className={`flex flex-col space-y-1.5 ${isUser ? 'items-end' : 'items-start'}`}>
-                  
-                  {/* Sender Label */}
-                  <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-slate-400 px-1">
-                    <span>{msg.senderName}</span>
-                    <span>•</span>
-                    <span>{msg.date}</span>
-                  </div>
+          <AnimatePresence initial={false}>
+            {messages.length === 0 ? (
+              <motion.div 
+                key="empty"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="h-full flex flex-col items-center justify-center text-center p-8 text-slate-400 space-y-3"
+              >
+                <MessageSquare className="w-12 h-12 text-slate-300 dark:text-slate-700" />
+                <p className="font-bold text-sm text-slate-600 dark:text-slate-300">No messages in your thread yet.</p>
+                <p className="text-xs max-w-sm text-slate-400">
+                  Type your message below to send an inquiry directly to our Kore Town staff. We respond within minutes!
+                </p>
+              </motion.div>
+            ) : (
+              messages.map((msg) => {
+                const isUser = msg.senderRole === 'user';
+                return (
+                  <motion.div 
+                    key={msg.id}
+                    initial={{ opacity: 0, x: isUser ? 20 : -20, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                    className={`flex flex-col space-y-1.5 ${isUser ? 'items-end' : 'items-start'}`}
+                  >
+                    
+                    {/* Sender Label */}
+                    <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-slate-400 px-1">
+                      <span>{msg.senderName}</span>
+                      <span>•</span>
+                      <span>{msg.date}</span>
+                    </div>
 
-                  {/* Message Bubble */}
-                  <div className={`max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl shadow-xs text-xs sm:text-sm font-sans leading-relaxed ${
-                    isUser 
-                      ? 'bg-[#0EA5E9] text-white rounded-tr-none' 
-                      : 'bg-slate-900 text-white dark:bg-slate-800 dark:text-amber-300 border border-slate-700 rounded-tl-none'
-                  }`}>
-                    {msg.productTitle && (
-                      <div className="mb-2 p-2 rounded-xl bg-white/10 border border-white/20 text-[11px] font-mono font-bold flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                        <span>Regarding Product: {msg.productTitle}</span>
-                      </div>
-                    )}
-                    <p>{msg.message}</p>
-
-                    {/* Staff Reply Sub-Bubble if attached */}
-                    {msg.reply && (
-                      <div className="mt-3 pt-3 border-t border-white/20 text-xs font-sans space-y-1 bg-white/10 p-2.5 rounded-xl">
-                        <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-black text-amber-300">
-                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>Staff Response:</span>
+                    {/* Message Bubble */}
+                    <div className={`max-w-[85%] sm:max-w-[75%] p-4 rounded-2xl shadow-xs text-xs sm:text-sm font-sans leading-relaxed ${
+                      isUser 
+                        ? 'bg-[#0EA5E9] text-white rounded-tr-none' 
+                        : 'bg-slate-900 text-white dark:bg-slate-800 dark:text-amber-300 border border-slate-700 rounded-tl-none'
+                    }`}>
+                      {msg.productTitle && (
+                        <div className="mb-2 p-2 rounded-xl bg-white/10 border border-white/20 text-[11px] font-mono font-bold flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                          <span>Regarding Product: {msg.productTitle}</span>
                         </div>
-                        <p className="text-white font-medium">{msg.reply}</p>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                      <p>{msg.message}</p>
 
-                  {/* Status Indicator */}
-                  <div className="flex items-center gap-1 text-[10px] text-slate-400 font-mono px-1">
-                    {msg.status === 'replied' ? (
-                      <span className="text-emerald-500 font-bold flex items-center gap-1">
-                        <CheckCheck className="w-3.5 h-3.5" />
-                        Replied by Staff
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-amber-500" />
-                        Awaiting Response
-                      </span>
-                    )}
-                  </div>
+                      {/* Staff Reply Sub-Bubble if attached */}
+                      {msg.reply && (
+                        <div className="mt-3 pt-3 border-t border-white/20 text-xs font-sans space-y-1 bg-white/10 p-2.5 rounded-xl">
+                          <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-black text-amber-300">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Staff Response:</span>
+                          </div>
+                          <p className="text-white font-medium">{msg.reply}</p>
+                        </div>
+                      )}
+                    </div>
 
-                </div>
-              );
-            })
-          )}
+                    {/* Status Indicator */}
+                    <div className="flex items-center gap-1 text-[10px] text-slate-400 font-mono px-1">
+                      {msg.status === 'replied' ? (
+                        <span className="text-emerald-500 font-bold flex items-center gap-1">
+                          <CheckCheck className="w-3.5 h-3.5" />
+                          Replied by Staff
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-amber-500" />
+                          Awaiting Response
+                        </span>
+                      )}
+                    </div>
+
+                  </motion.div>
+                );
+              })
+            )}
+          </AnimatePresence>
           <div ref={messagesEndRef} />
         </div>
 

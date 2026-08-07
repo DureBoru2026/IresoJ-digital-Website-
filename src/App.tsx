@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Laptop, Phone, Mail, MapPin, ArrowRight, ShieldCheck, 
   MessageSquare, MessageCircle, BookOpen, AlertCircle, Sparkles, CheckCircle2,
-  ListFilter, DollarSign, Calendar, Heart, Shield, HelpCircle, Eye, LogIn,
+  ListFilter, DollarSign, Calendar, Heart, Shield, HelpCircle, Eye, LogIn, LogOut,
   Send, Search, ChevronDown, RotateCcw, X, ZoomIn, Download, Star,
   Home, ShoppingBag, Users, Coins, User, UserPlus, Bell, BellRing
 } from 'lucide-react';
@@ -43,6 +43,7 @@ import ServiceTracker from './components/ServiceTracker';
 import StartAndMarketplaceSection from './components/StartAndMarketplaceSection';
 import FloatingContact from './components/FloatingContact';
 import UpdateNotifier from './components/UpdateNotifier';
+import BookingReminder from './components/BookingReminder';
 import DigitalStore from './components/DigitalStore';
 import RecentlyViewed from './components/RecentlyViewed';
 import MobileAirtimePurchase from './components/MobileAirtimePurchase';
@@ -56,10 +57,10 @@ import LoyaltyLeaderboard from './components/LoyaltyLeaderboard';
 import { formatETB } from './utils';
 
 const sampleWorks = [
-  { id: 1, url: 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?auto=format&fit=crop&q=80&w=800', title: 'Corporate ID Card' },
-  { id: 2, url: 'https://images.unsplash.com/photo-1544396821-4dd40b938ad3?auto=format&fit=crop&q=80&w=800', title: 'Magazine Layout' },
-  { id: 3, url: 'https://images.unsplash.com/photo-1586717799263-ce20eb81bdce?auto=format&fit=crop&q=80&w=800', title: 'Business Booklet' },
-  { id: 4, url: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&q=80&w=800', title: 'Event Poster' }
+  { id: 1, url: 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?auto=format&fit=crop&q=80&w=800', title: 'corpID' },
+  { id: 2, url: 'https://images.unsplash.com/photo-1544396821-4dd40b938ad3?auto=format&fit=crop&q=80&w=800', title: 'magLayout' },
+  { id: 3, url: 'https://images.unsplash.com/photo-1586717799263-ce20eb81bdce?auto=format&fit=crop&q=80&w=800', title: 'bizBooklet' },
+  { id: 4, url: 'https://images.unsplash.com/photo-1626785774573-4b799315345d?auto=format&fit=crop&q=80&w=800', title: 'eventPoster' }
 ];
 
 const mobileTabs = [
@@ -128,6 +129,10 @@ const mobileTabs = [
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [customers, setCustomers] = useState<CustomerRecord[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [userBookings, setUserBookings] = useState<Booking[]>(() => {
+    const saved = localStorage.getItem('es_digital_user_bookings');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [assets, setAssets] = useState<DigitalAsset[]>([]);
 
   // Price Drop Notification State
@@ -616,8 +621,9 @@ const mobileTabs = [
       'esb#2026',
       'Esb#2026',
       'admin123',
-      'admin'
-    ].includes(loginPassword);
+      'admin',
+      import.meta.env.VITE_ADMIN_TOKEN
+    ].filter(Boolean).includes(loginPassword);
 
     if (isValidAdminUser && isValidAdminPass) {
       const hardcodedUser = {
@@ -626,7 +632,7 @@ const mobileTabs = [
         email: 'jemalfano030@gmail.com',
         role: 'admin' as const
       };
-      const token = 'es-digital-csc-admin-secret-session-token';
+      const token = import.meta.env.VITE_ADMIN_TOKEN || 'es-digital-csc-admin-secret-session-token';
 
       localStorage.setItem('es_digital_admin_token', token);
       localStorage.setItem('es_digital_admin_user', JSON.stringify(hardcodedUser));
@@ -884,6 +890,15 @@ const mobileTabs = [
       if (res.ok && data.success) {
         if (authState.isAuthenticated && authState.token) {
           loadAdminData(authState.token);
+        }
+
+        // Save to local user bookings for reminders
+        if (data.booking) {
+          setUserBookings(prev => {
+            const updated = [data.booking, ...prev];
+            localStorage.setItem('es_digital_user_bookings', JSON.stringify(updated));
+            return updated;
+          });
         }
 
         // Trigger SMS notification trigger
@@ -1771,23 +1786,25 @@ const mobileTabs = [
                       <div className="border-b border-slate-100 pb-3">
                         <h2 className="font-display font-bold text-slate-900 text-lg sm:text-xl flex items-center gap-2.5">
                           <div className="w-2.5 h-2.5 rounded-full bg-[#0EA5E9]" />
-                          <span>1. Computer & Electronics Maintenance</span>
+                          <span>1. {t('compMaintenance')}</span>
                         </h2>
                         <p className="text-xs text-slate-500 mt-1">
-                          Precision hardware diagnoses, driver updates, dust cleaning, motherboard diagnostics, and screen restoration.
+                          {t('compMaintenanceDesc')}
                         </p>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {maintenanceProducts.map((prod) => (
-                          <ProductCard 
-                            key={prod.id} 
-                            product={prod} 
-                            onSelect={(p) => handleProductSelection(p)} 
-                            isWatched={watchedProducts.some(wp => wp.productId === prod.id)}
-                            onToggleWatch={toggleWatchProduct}
-                          />
-                        ))}
-                      </div>
+                      <motion.div layout className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <AnimatePresence mode="popLayout">
+                          {maintenanceProducts.map((prod) => (
+                            <ProductCard 
+                              key={prod.id} 
+                              product={prod} 
+                              onSelect={(p) => handleProductSelection(p)} 
+                              isWatched={watchedProducts.some(wp => wp.productId === prod.id)}
+                              onToggleWatch={toggleWatchProduct}
+                            />
+                          ))}
+                        </AnimatePresence>
+                      </motion.div>
                     </div>
                   )}
 
@@ -1797,23 +1814,25 @@ const mobileTabs = [
                     <div className="border-b border-slate-100 pb-3">
                       <h2 className="font-display font-bold text-slate-900 text-lg sm:text-xl flex items-center gap-2.5">
                         <div className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
-                        <span>2. Print & Publish layouts</span>
+                        <span>2. {t('printPublishLayouts')}</span>
                       </h2>
                       <p className="text-xs text-slate-500 mt-1">
-                        Corporate booklet layouts, ID card design formatting, color photocopying, and custom layouts by our designers.
+                        {t('printPublishDesc')}
                       </p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {printProducts.map((prod) => (
-                        <ProductCard 
-                          key={prod.id} 
-                          product={prod} 
-                          onSelect={(p) => handleProductSelection(p)} 
-                          isWatched={watchedProducts.some(wp => wp.productId === prod.id)}
-                          onToggleWatch={toggleWatchProduct}
-                        />
-                      ))}
-                    </div>
+                    <motion.div layout className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      <AnimatePresence mode="popLayout">
+                        {printProducts.map((prod) => (
+                          <ProductCard 
+                            key={prod.id} 
+                            product={prod} 
+                            onSelect={(p) => handleProductSelection(p)} 
+                            isWatched={watchedProducts.some(wp => wp.productId === prod.id)}
+                            onToggleWatch={toggleWatchProduct}
+                          />
+                        ))}
+                      </AnimatePresence>
+                    </motion.div>
                     
                     {/* Sample Works Grid */}
                     <div className="pt-6 border-t border-slate-100">
@@ -1837,7 +1856,7 @@ const mobileTabs = [
                               <ZoomIn className="text-white w-8 h-8 opacity-0 group-hover:opacity-100 transition-opacity duration-300 drop-shadow-md" />
                             </div>
                             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/80 to-transparent p-3 translate-y-2 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                              <span className="text-white text-xs font-bold block truncate">{work.title}</span>
+                              <span className="text-white text-xs font-bold block truncate">{t(work.title)}</span>
                             </div>
                           </div>
                         ))}
@@ -1852,23 +1871,25 @@ const mobileTabs = [
                     <div className="border-b border-slate-100 pb-3">
                       <h2 className="font-display font-bold text-slate-900 text-lg sm:text-xl flex items-center gap-2.5">
                         <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
-                        <span>3. Short Basic Training courses</span>
+                        <span>3. {t('shortBasicTraining')}</span>
                       </h2>
                       <p className="text-xs text-slate-500 mt-1">
-                        Short-term, fully practical workshops. Learn Windows systems, Microsoft Office Suite, and internet safety.
+                        {t('shortTrainingDesc')}
                       </p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {trainingProducts.map((prod) => (
-                        <ProductCard 
-                          key={prod.id} 
-                          product={prod} 
-                          onSelect={(p) => handleProductSelection(p)} 
-                          isWatched={watchedProducts.some(wp => wp.productId === prod.id)}
-                          onToggleWatch={toggleWatchProduct}
-                        />
-                      ))}
-                    </div>
+                    <motion.div layout className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      <AnimatePresence mode="popLayout">
+                        {trainingProducts.map((prod) => (
+                          <ProductCard 
+                            key={prod.id} 
+                            product={prod} 
+                            onSelect={(p) => handleProductSelection(p)} 
+                            isWatched={watchedProducts.some(wp => wp.productId === prod.id)}
+                            onToggleWatch={toggleWatchProduct}
+                          />
+                        ))}
+                      </AnimatePresence>
+                    </motion.div>
                   </div>
                 )}
 
@@ -1885,23 +1906,25 @@ const mobileTabs = [
                     <div className="border-b border-slate-100 pb-3">
                       <h2 className="font-display font-bold text-slate-900 text-lg sm:text-xl flex items-center gap-2.5">
                         <div className="w-2.5 h-2.5 rounded-full bg-amber-600" />
-                        <span>4. Sales Section (Salle)</span>
+                        <span>4. {t('storeSalesSection')}</span>
                       </h2>
                       <p className="text-xs text-slate-500 mt-1">
-                        Curated physical hardware, activated mobile airtime vouchers, ATS-friendly digital resume codes, and signature handcrafted full-grain leather accessories.
+                        {t('storeSalesDesc')}
                       </p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                      {salesProducts.map((prod) => (
-                        <ProductCard 
-                          key={prod.id} 
-                          product={prod} 
-                          onSelect={(p) => handleProductSelection(p)} 
-                          isWatched={watchedProducts.some(wp => wp.productId === prod.id)}
-                          onToggleWatch={toggleWatchProduct}
-                        />
-                      ))}
-                    </div>
+                    <motion.div layout className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      <AnimatePresence mode="popLayout">
+                        {salesProducts.map((prod) => (
+                          <ProductCard 
+                            key={prod.id} 
+                            product={prod} 
+                            onSelect={(p) => handleProductSelection(p)} 
+                            isWatched={watchedProducts.some(wp => wp.productId === prod.id)}
+                            onToggleWatch={toggleWatchProduct}
+                          />
+                        ))}
+                      </AnimatePresence>
+                    </motion.div>
                   </div>
                 )}
               </div>
@@ -1955,30 +1978,47 @@ const mobileTabs = [
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 sm:gap-8">
               
               {/* Form panel - 3/5 cols */}
-              <div className="md:col-span-3 bg-white border border-slate-100 rounded-2xl p-4 sm:p-8 shadow-sm space-y-3 sm:space-y-6 text-left">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: 'easeOut' }}
+                className="md:col-span-3 bg-white border border-slate-100 rounded-2xl p-4 sm:p-8 shadow-sm space-y-3 sm:space-y-6 text-left"
+              >
                 <h3 className="font-display font-bold text-slate-800 text-xs sm:text-sm uppercase tracking-wider">
                   {t('feedbackFormTitle')}
                 </h3>
 
-                {contactSuccess && (
-                  <div className="bg-green-50 text-green-800 p-3 sm:p-4 rounded-xl border border-green-200 flex items-center space-x-2 text-xs font-semibold">
-                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 shrink-0" />
-                    <span>{contactSuccess}</span>
-                  </div>
-                )}
+                <AnimatePresence mode="wait">
+                  {contactSuccess && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                      animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+                      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                      className="bg-green-50 text-green-800 p-3 sm:p-4 rounded-xl border border-green-200 flex items-center space-x-2 text-xs font-semibold overflow-hidden"
+                    >
+                      <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 shrink-0" />
+                      <span>{contactSuccess}</span>
+                    </motion.div>
+                  )}
 
-                {contactError && (
-                  <div className="bg-red-50 text-red-800 p-3 sm:p-4 rounded-xl border border-red-200 flex items-center space-x-2 text-xs font-semibold">
-                    <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 shrink-0" />
-                    <span>{contactError}</span>
-                  </div>
-                )}
+                  {contactError && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                      animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+                      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                      className="bg-red-50 text-red-800 p-3 sm:p-4 rounded-xl border border-red-200 flex items-center space-x-2 text-xs font-semibold overflow-hidden"
+                    >
+                      <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 shrink-0" />
+                      <span>{contactError}</span>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 <form onSubmit={handleContactSubmit} className="space-y-3 sm:space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 sm:mb-1">
-                        {t('fullNameLabel')}
+                        {t('fullNameLabel')} / Maqaa Guutuu *
                       </label>
                       <input
                         type="text"
@@ -1991,7 +2031,7 @@ const mobileTabs = [
                     </div>
                     <div>
                       <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 sm:mb-1">
-                        {t('phoneNumberLabel')}
+                        {t('phoneNumberLabel')} / Lakkoofsa Bilbilaa
                       </label>
                       <input
                         type="tel"
@@ -2005,7 +2045,7 @@ const mobileTabs = [
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 sm:mb-1">
-                      {t('emailAddressLabel')}
+                      {t('emailAddressLabel')} / Teessoo Imeeylii *
                     </label>
                     <input
                       type="email"
@@ -2019,7 +2059,7 @@ const mobileTabs = [
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 sm:mb-2">
-                      {t('experienceRatingLabel')}
+                      {t('experienceRatingLabel')} / Sadarkaa Tajaajilaa
                     </label>
                     <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-4">
                       {[1, 2, 3, 4, 5].map((star) => (
@@ -2042,7 +2082,7 @@ const mobileTabs = [
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 sm:mb-1">
-                      {t('detailedMessageLabel')}
+                      {t('detailedMessageLabel')} / Gaaffii ykn Ergaa Bal'aa *
                     </label>
                     <textarea
                       required
@@ -2064,7 +2104,7 @@ const mobileTabs = [
                   </button>
 
                 </form>
-              </div>
+              </motion.div>
 
               {/* Map & Coordinates panel - 2/5 cols */}
               <div className="md:col-span-2 space-y-6 text-left">
@@ -2678,30 +2718,45 @@ const mobileTabs = [
           <div id="admin-dashboard-view" className="space-y-8 text-left animate-in fade-in duration-300">
             
             {/* Dashboard Welcome Header */}
-            <div className="bg-slate-900 text-white p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <div>
-                <span className="text-[9px] uppercase font-mono bg-sky-500/20 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded-full font-bold tracking-wider">
-                  Staff Workspace
-                </span>
-                <h1 className="font-display font-extrabold text-2xl mt-1">
-                  Welcome back, {authState.user?.username}!
+            <div className="bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 text-white p-6 sm:p-8 rounded-3xl border border-indigo-500/30 shadow-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden group">
+              {/* Subtle background decoration */}
+              <div className="absolute -right-8 -top-8 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl group-hover:bg-indigo-500/20 transition-all duration-500" />
+              <div className="absolute -left-8 -bottom-8 w-24 h-24 bg-sky-500/10 rounded-full blur-2xl group-hover:bg-sky-500/20 transition-all duration-500" />
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span className="text-[9px] uppercase font-mono bg-indigo-500/30 text-indigo-300 border border-indigo-400/30 px-2 py-0.5 rounded-full font-bold tracking-wider">
+                    Staff Workspace
+                  </span>
+                  <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 uppercase tracking-tight">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Admin Session Active
+                  </div>
+                </div>
+                <h1 className="font-display font-extrabold text-2xl md:text-3xl mt-1 tracking-tight">
+                  Welcome back, <span className="text-indigo-300">{authState.user?.username}</span>!
                 </h1>
-                <p className="text-xs text-slate-400 mt-1">
-                  Logged in as: <strong>{authState.user?.email}</strong> (Role: Administrator)
+                <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-2">
+                  <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+                  Logged in as: <strong className="text-slate-300">{authState.user?.email}</strong> 
+                  <span className="text-slate-600">|</span>
+                  <span className="bg-slate-800 px-2 py-0.5 rounded text-[10px] font-black text-slate-400 uppercase">Administrator</span>
                 </p>
               </div>
 
-              <div className="flex items-center space-x-3 shrink-0">
+              <div className="flex items-center space-x-3 shrink-0 relative z-10">
                 <button
                   onClick={() => setActiveTab('home')}
-                  className="px-3.5 py-1.5 border border-slate-700 hover:border-slate-600 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-lg transition-colors"
+                  className="px-4 py-2 border border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800/80 text-slate-300 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer"
                 >
-                  View Public Site
+                  <Eye className="w-3.5 h-3.5" />
+                  Public Site
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="px-3.5 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors shadow-md shadow-red-600/10"
+                  className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white text-xs font-black rounded-xl transition-all shadow-lg shadow-red-900/20 flex items-center gap-2 cursor-pointer"
                 >
+                  <LogOut className="w-3.5 h-3.5" />
                   Sign Out
                 </button>
               </div>
@@ -2711,18 +2766,17 @@ const mobileTabs = [
             <div className="flex flex-wrap border-b border-slate-100 gap-1.5">
               {[
                 { id: 'dashboard', label: 'Command Center' },
-                { id: 'products', label: 'Catalog CRUD' },
-                { id: 'payments', label: 'Payment Ledger Verification' },
-                { id: 'bookings', label: 'Service Bookings Desk' },
-                { id: 'history', label: 'Transaction History' },
-                { id: 'reports', label: 'Reports & Analytics' },
-                { id: 'commission', label: 'Commission Analytics' },
-                { id: 'users', label: 'Customer Book (CRM)' },
-                { id: 'messages', label: '💬 Real-Time Support Chat' },
-                { id: 'share', label: 'Communications & Inbox' },
+                { id: 'products', label: 'Shop & Catalog CRUD' },
+                { id: 'assets', label: 'Academy & Digital Assets' },
+                { id: 'share', label: 'News & Announcements' },
+                { id: 'payments', label: 'Payment Ledger' },
+                { id: 'bookings', label: 'Service Bookings' },
+                { id: 'users', label: 'Customer CRM' },
+                { id: 'messages', label: '💬 Support Chat' },
+                { id: 'history', label: 'History' },
+                { id: 'reports', label: 'Analytics' },
                 { id: 'payroll', label: 'Staff Payroll' },
-                { id: 'assets', label: 'Digital Assets Store' },
-                { id: 'logs', label: 'Security Audit Logs' },
+                { id: 'logs', label: 'Security Logs' },
               ].map((sub) => {
                 const isActive = adminSubTab === sub.id;
                 return (
@@ -2965,6 +3019,7 @@ const mobileTabs = [
       <Footer setActiveTab={setActiveTab} />
       <FloatingContact />
       <UpdateNotifier />
+      <BookingReminder bookings={userBookings} />
 
       {/* Global Sync Notification Overlay */}
       <AnimatePresence>

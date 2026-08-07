@@ -22,6 +22,7 @@ import {
   GraduationCap,
   Code2
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { DigitalAsset } from '../types';
 import { formatETB } from '../utils';
 
@@ -522,23 +523,38 @@ export default function DigitalStore({ assets, onDownload, onInitiatePurchase }:
       </div>
 
       {/* Asset Cards Grid matching Screenshot 3 styling */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredAssets.length === 0 ? (
-          <div className="col-span-full py-16 text-center bg-white rounded-3xl border border-slate-100 p-8">
-            <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mx-auto mb-3">
-              <Filter className="w-6 h-6" />
-            </div>
-            <p className="text-slate-600 font-bold text-sm">No assets found matching your criteria.</p>
-            <p className="text-slate-400 text-xs mt-1">Try broadening your category or price filter slider.</p>
-          </div>
-        ) : (
-          filteredAssets.map((asset) => {
-            const isWishlisted = wishlistIds.includes(asset.id);
-            return (
-              <div 
-                key={asset.id}
-                className="bg-white rounded-3xl border border-slate-100 shadow-2xs hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col justify-between"
-              >
+      <motion.div 
+        layout
+        className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+      >
+        <AnimatePresence mode="popLayout">
+          {filteredAssets.length === 0 ? (
+            <motion.div 
+              key="no-results"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="col-span-full py-16 text-center bg-white rounded-3xl border border-slate-100 p-8"
+            >
+              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 mx-auto mb-3">
+                <Filter className="w-6 h-6" />
+              </div>
+              <p className="text-slate-600 font-bold text-sm">No assets found matching your criteria.</p>
+              <p className="text-slate-400 text-xs mt-1">Try broadening your category or price filter slider.</p>
+            </motion.div>
+          ) : (
+            filteredAssets.map((asset) => {
+              const isWishlisted = wishlistIds.includes(asset.id);
+              return (
+                <motion.div 
+                  key={asset.id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  whileHover={{ y: -8, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }}
+                  className="bg-white rounded-3xl border border-slate-100 shadow-2xs transition-all duration-300 overflow-hidden flex flex-col justify-between"
+                >
                 {/* Top Actions Overlay */}
                 <div className="p-6 relative">
                   <div className="flex items-center justify-between mb-4">
@@ -612,11 +628,12 @@ export default function DigitalStore({ assets, onDownload, onInitiatePurchase }:
                     </button>
                   )}
                 </div>
-              </div>
+              </motion.div>
             );
           })
         )}
-      </div>
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }

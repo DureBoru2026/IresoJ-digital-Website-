@@ -49,14 +49,12 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
   const [drawerSearch, setDrawerSearch] = useState('');
 
   const navItems = [
-    { id: 'home', label: 'Home', icon: Home },
-    { id: 'about', label: t('aboutUs'), icon: Info },
-    { id: 'services', label: 'Services & Products', icon: Laptop },
-    { id: 'digital-store', label: 'Digital Store', icon: ShoppingBag },
-    { id: 'messages', label: 'My Messages', icon: MessageSquare },
-    ...(authState.isAuthenticated ? [{ id: 'profile', label: 'My Profile', icon: User }] : []),
-    { id: 'news', label: 'Announcements', icon: Globe },
-    { id: 'contact', label: 'Contact Us', icon: Phone },
+    { id: 'home', label: t('home'), icon: Home },
+    { id: 'services', label: t('services'), icon: Laptop },
+    { id: 'digital-store', label: t('digitalStore'), icon: ShoppingBag },
+    { id: 'community', label: t('contentRewards'), icon: Sparkles },
+    { id: 'durepay', label: t('instantPayouts'), icon: DollarSign },
+    { id: 'messages', label: t('support'), icon: MessageSquare },
   ] as const;
 
   const navigateTo = (tab: ActiveTab) => {
@@ -67,23 +65,49 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
   return (
     <header id="app-header" className="sticky top-0 z-40 bg-[#FAF8F5] dark:bg-slate-900 border-b border-stone-200/70 dark:border-slate-800 shadow-xs transition-all duration-300">
       
-      {/* Thick Black Navigation Ticker Header Banner */}
-      <div id="top-nav-ticker" className="bg-slate-950 text-amber-300 border-b border-amber-500/40 py-2 px-4 text-xs sm:text-sm font-black uppercase tracking-wider shadow-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-center space-x-3 sm:space-x-6 min-w-max text-center overflow-x-auto">
-          <span className="flex items-center gap-1.5 text-white font-black">
-            <Sparkles className="w-4 h-4 text-amber-400 animate-pulse" />
-            Content Rewards
-          </span>
-          <span className="text-amber-500 font-black">•</span>
-          <span className="text-amber-300 font-black">Instant Payouts</span>
-          <span className="text-amber-500 font-black">•</span>
-          <span className="text-white font-black">Book Sales</span>
-          <span className="text-amber-500 font-black">•</span>
-          <span className="text-amber-300 font-black">Digital Products</span>
-          <span className="text-amber-500 font-black">•</span>
-          <span className="text-emerald-400 font-black">Services & Telebirr</span>
+      {/* Quick Navigation Ticker - Only visible on Home to keep other views clean */}
+      {activeTab === 'home' && (
+        <div id="top-nav-ticker" className="bg-slate-900 text-slate-300 border-b border-slate-800 py-1.5 px-4 text-[10px] sm:text-xs font-bold uppercase tracking-wider shadow-sm">
+          <div className="max-w-7xl mx-auto flex items-center justify-center space-x-4 sm:space-x-8 min-w-max text-center overflow-x-auto scrollbar-hide">
+            <button 
+              onClick={() => navigateTo('community')}
+              className="flex items-center gap-1.5 text-white hover:text-amber-400 transition-colors cursor-pointer group"
+            >
+              <Sparkles className="w-3 h-3 text-amber-400 group-hover:animate-spin" />
+              {t('contentRewards')}
+            </button>
+            <span className="text-slate-700 font-black">/</span>
+            <button 
+              onClick={() => navigateTo('durepay')}
+              className="text-slate-300 hover:text-white transition-colors cursor-pointer"
+            >
+              {t('instantPayouts')}
+            </button>
+            <span className="text-slate-700 font-black">/</span>
+            <button 
+              onClick={() => navigateTo('digital-store')}
+              className="text-white hover:text-amber-400 transition-colors cursor-pointer"
+            >
+              Book Sales
+            </button>
+            <span className="text-slate-700 font-black">/</span>
+            <button 
+              onClick={() => navigateTo('digital-store')}
+              className="text-slate-300 hover:text-white transition-colors cursor-pointer"
+            >
+              {t('digitalStore')}
+            </button>
+            <span className="text-slate-700 font-black">/</span>
+            <button 
+              onClick={() => navigateTo('services')}
+              className="text-emerald-400 font-black hover:text-emerald-300 transition-all cursor-pointer flex items-center gap-1"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              {t('services')}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
          <div className="flex justify-between items-center h-20">

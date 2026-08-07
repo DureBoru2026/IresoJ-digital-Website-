@@ -17,9 +17,11 @@ import {
   FileText, 
   ShieldCheck,
   Calendar,
-  Info
+  Info,
+  QrCode
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface TrackResult {
   id: string;
@@ -464,9 +466,31 @@ export default function ServiceTracker({ isAdmin, onBookingStatusUpdate }: Servi
                   </div>
 
                   {result.paymentStatus && (
-                    <div className="px-3 py-1 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Payment: {result.paymentStatus.toUpperCase()} ({result.paymentGateway || 'telebirr'})</span>
+                    <div className="flex flex-col gap-2 w-full">
+                      <div className="px-3 py-1 bg-white rounded-xl border border-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Payment: {result.paymentStatus.toUpperCase()} ({result.paymentGateway || 'telebirr'})</span>
+                      </div>
+                      
+                      {result.paymentStatus === 'unpaid' && (
+                        <div className="p-3 bg-white rounded-2xl border border-slate-200 flex flex-col items-center gap-2 shadow-sm">
+                          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">
+                            <QrCode className="w-3.5 h-3.5 text-indigo-600" />
+                            <span>Scan to Pay</span>
+                          </div>
+                          <div className="p-2 bg-white rounded-lg border border-slate-100 shadow-inner">
+                            <QRCodeSVG 
+                              value={`PAYMENT:${result.id}:${result.serviceTitle}:Telebirr:0995852194`}
+                              size={80}
+                              level="H"
+                              includeMargin={false}
+                            />
+                          </div>
+                          <p className="text-[9px] text-slate-400 font-medium text-center leading-tight">
+                            Scan with Telebirr or Mobile Banking to complete payment for {result.id}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 

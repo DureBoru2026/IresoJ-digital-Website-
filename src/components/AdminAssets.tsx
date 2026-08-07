@@ -12,7 +12,9 @@ const CATEGORY_OPTIONS = [
   'Software & Utilities',
   'Graphics & Templates',
   'Repair Manuals & Guides',
+  'Academy Materials',
   'Course Media',
+  'Educational Books',
   'Business Documents',
   'General'
 ];

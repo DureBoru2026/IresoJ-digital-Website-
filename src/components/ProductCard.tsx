@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Sparkles, Info, ShoppingCart, QrCode, X, Copy, CheckCircle, Bell, BellRing } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { ProductService } from '../types';
+import { useLanguage } from '../LanguageContext';
 
 import { formatETB } from '../utils';
 
@@ -17,6 +19,7 @@ interface ProductCardProps {
 export default function ProductCard({ product, onSelect, isLoading, isWatched, onToggleWatch }: ProductCardProps) {
   const [showQR, setShowQR] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { t } = useLanguage();
 
   if (isLoading) {
     return (
@@ -48,11 +51,11 @@ export default function ProductCard({ product, onSelect, isLoading, isWatched, o
   
   const getCategoryLabel = (category: string) => {
     switch (category) {
-      case 'maintenance': return 'Maintenance';
-      case 'print_publish': return 'Printing & Layouts';
-      case 'training': return 'IT Basic Training';
-      case 'sales': return 'Store Sales';
-      default: return 'Service';
+      case 'maintenance': return t('maintenance');
+      case 'print_publish': return t('printPublish');
+      case 'training': return t('training');
+      case 'sales': return t('sales');
+      default: return t('services');
     }
   };
 
@@ -80,9 +83,13 @@ export default function ProductCard({ product, onSelect, isLoading, isWatched, o
   };
 
   return (
-    <div 
+    <motion.div 
       id={`product-card-${product.id}`} 
-      className="relative bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-200/80 transition-all duration-300 flex flex-col overflow-hidden h-full group"
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -5, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }}
+      className="relative bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col overflow-hidden h-full group transition-colors duration-300 hover:border-slate-200/80"
     >
       {/* Product Image Panel */}
       <div className="relative aspect-video w-full overflow-hidden bg-slate-100 shrink-0">
@@ -263,6 +270,6 @@ export default function ProductCard({ product, onSelect, isLoading, isWatched, o
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
