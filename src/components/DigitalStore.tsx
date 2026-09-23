@@ -20,20 +20,34 @@ import {
   LayoutGrid,
   Sprout,
   GraduationCap,
-  Code2
+  Code2,
+  Phone,
+  CreditCard,
+  QrCode,
+  Zap,
+  Smartphone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DigitalAsset } from '../types';
 import { formatETB } from '../utils';
+import MobileAirtimePurchase from './MobileAirtimePurchase';
 
 interface DigitalStoreProps {
   assets: DigitalAsset[];
   onDownload: (id: string) => void;
   onInitiatePurchase: (asset: DigitalAsset) => void;
+  onSubmitTransaction?: (txData: {
+    referenceNumber: string;
+    paymentGateway: 'telebirr' | 'CBE Birr';
+    customerName: string;
+    customerPhone: string;
+    amount: number;
+    purpose: string;
+  }) => Promise<{ success: boolean; message?: string; error?: string }>;
 }
 
-export default function DigitalStore({ assets, onDownload, onInitiatePurchase }: DigitalStoreProps) {
-  const [filter, setFilter] = useState<'all' | 'agriculture' | 'academy' | 'software' | DigitalAsset['type']>('all');
+export default function DigitalStore({ assets, onDownload, onInitiatePurchase, onSubmitTransaction }: DigitalStoreProps) {
+  const [filter, setFilter] = useState<'all' | 'airtime' | 'agriculture' | 'academy' | 'software' | DigitalAsset['type']>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [refSearch, setRefSearch] = useState('');
   const [downloadLink, setDownloadLink] = useState<string | null>(null);
@@ -52,9 +66,9 @@ export default function DigitalStore({ assets, onDownload, onInitiatePurchase }:
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('iresoj_recent_searches_catalog');
-      return saved ? JSON.parse(saved) : ['YouTube Broadcast', 'Basic Computer Skills', 'TikTok Promotion', 'Graphic Design', 'Agriculture Guide'];
+      return saved ? JSON.parse(saved) : ['Telebirr Airtime Cards', 'YouTube Broadcast', 'Basic Computer Skills', 'TikTok Promotion', 'Graphic Design'];
     } catch {
-      return ['YouTube Broadcast', 'Basic Computer Skills', 'TikTok Promotion', 'Graphic Design', 'Agriculture Guide'];
+      return ['Telebirr Airtime Cards', 'YouTube Broadcast', 'Basic Computer Skills', 'TikTok Promotion', 'Graphic Design'];
     }
   });
 
@@ -123,7 +137,8 @@ export default function DigitalStore({ assets, onDownload, onInitiatePurchase }:
   };
 
   const categoryCounts = {
-    all: assets.length,
+    all: assets.length + 2,
+    airtime: 2,
     agriculture: assets.filter(a => a.type === 'pdf' || a.title.toLowerCase().includes('agri') || a.title.toLowerCase().includes('farm')).length || 2,
     academy: assets.filter(a => a.type === 'video' || a.title.toLowerCase().includes('course') || a.title.toLowerCase().includes('web')).length || 3,
     software: assets.filter(a => a.type === 'template' || a.type === 'ppt' || a.title.toLowerCase().includes('app')).length || 4,
@@ -137,7 +152,9 @@ export default function DigitalStore({ assets, onDownload, onInitiatePurchase }:
 
     // Category filter check
     let matchesCategory = true;
-    if (filter === 'agriculture') {
+    if (filter === 'airtime') {
+      return false; // Airtime cards handled in dedicated section
+    } else if (filter === 'agriculture') {
       matchesCategory = asset.type === 'pdf' || asset.title.toLowerCase().includes('agri') || asset.title.toLowerCase().includes('farm');
     } else if (filter === 'academy') {
       matchesCategory = asset.type === 'video' || asset.title.toLowerCase().includes('course') || asset.title.toLowerCase().includes('academy');
@@ -254,7 +271,8 @@ export default function DigitalStore({ assets, onDownload, onInitiatePurchase }:
                 onChange={(e) => setFilter(e.target.value as any)}
                 className="appearance-none bg-slate-50 border border-slate-200/80 rounded-2xl px-4 py-2.5 pr-9 text-xs font-black uppercase text-slate-800 tracking-wider focus:outline-none focus:border-blue-500 cursor-pointer"
               >
-                <option value="all">ALL ASSETS</option>
+                <option value="all">ALL ASSETS & CARDS</option>
+                <option value="airtime">MOBILE CARDS & TELEBIRR</option>
                 <option value="agriculture">MODERN AGRICULTURE</option>
                 <option value="academy">DIGITAL ACADEMY</option>
                 <option value="software">SOFTWARE & TEMPLATES</option>
@@ -375,100 +393,149 @@ export default function DigitalStore({ assets, onDownload, onInitiatePurchase }:
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           {/* All Assets Card */}
           <div
             onClick={() => setFilter('all')}
-            className={`p-5 rounded-3xl border transition-all cursor-pointer flex flex-col justify-between h-32 ${
+            className={`p-4 rounded-3xl border transition-all cursor-pointer flex flex-col justify-between h-32 ${
               filter === 'all'
                 ? 'bg-slate-950 text-white border-slate-900 shadow-xl shadow-slate-900/10 ring-2 ring-slate-900'
                 : 'bg-white text-slate-900 border-slate-100 hover:border-slate-300'
             }`}
           >
             <div className="flex items-start justify-between">
-              <div className={`p-2.5 rounded-2xl ${filter === 'all' ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-700'}`}>
-                <LayoutGrid className="w-5 h-5" />
+              <div className={`p-2 rounded-2xl ${filter === 'all' ? 'bg-white/10 text-white' : 'bg-slate-100 text-slate-700'}`}>
+                <LayoutGrid className="w-4 h-4" />
               </div>
-              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${filter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-full ${filter === 'all' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
                 {categoryCounts.all}
               </span>
             </div>
             <div>
-              <h3 className="font-black text-sm">All Assets</h3>
-              <p className={`text-[11px] ${filter === 'all' ? 'text-slate-400' : 'text-slate-500'}`}>Browse entire marketplace catalog</p>
+              <h3 className="font-black text-xs sm:text-sm">All Catalog</h3>
+              <p className={`text-[10px] ${filter === 'all' ? 'text-slate-400' : 'text-slate-500'}`}>Browse entire store</p>
+            </div>
+          </div>
+
+          {/* Mobile Cards & Telebirr Card */}
+          <div
+            onClick={() => setFilter('airtime')}
+            className={`p-4 rounded-3xl border transition-all cursor-pointer flex flex-col justify-between h-32 ${
+              filter === 'airtime'
+                ? 'bg-sky-600 text-white border-sky-600 shadow-xl shadow-sky-600/20 ring-2 ring-sky-500'
+                : 'bg-white text-slate-900 border-slate-100 hover:border-slate-300'
+            }`}
+          >
+            <div className="flex items-start justify-between">
+              <div className={`p-2 rounded-2xl ${filter === 'airtime' ? 'bg-white/20 text-white' : 'bg-sky-50 text-sky-600'}`}>
+                <Phone className="w-4 h-4" />
+              </div>
+              <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-full ${filter === 'airtime' ? 'bg-white/20 text-white' : 'bg-sky-50 text-sky-600'}`}>
+                Telebirr
+              </span>
+            </div>
+            <div>
+              <h3 className="font-black text-xs sm:text-sm">Mobile Cards & Telebirr</h3>
+              <p className={`text-[10px] ${filter === 'airtime' ? 'text-sky-100' : 'text-slate-500'}`}>Ethio &amp; Safaricom airtime top-up</p>
             </div>
           </div>
 
           {/* Modern Agriculture Card */}
           <div
             onClick={() => setFilter('agriculture')}
-            className={`p-5 rounded-3xl border transition-all cursor-pointer flex flex-col justify-between h-32 ${
+            className={`p-4 rounded-3xl border transition-all cursor-pointer flex flex-col justify-between h-32 ${
               filter === 'agriculture'
                 ? 'bg-slate-950 text-white border-slate-900 shadow-xl shadow-slate-900/10 ring-2 ring-slate-900'
                 : 'bg-white text-slate-900 border-slate-100 hover:border-slate-300'
             }`}
           >
             <div className="flex items-start justify-between">
-              <div className={`p-2.5 rounded-2xl ${filter === 'agriculture' ? 'bg-white/10 text-white' : 'bg-emerald-50 text-emerald-600'}`}>
-                <Sprout className="w-5 h-5" />
+              <div className={`p-2 rounded-2xl ${filter === 'agriculture' ? 'bg-white/10 text-white' : 'bg-emerald-50 text-emerald-600'}`}>
+                <Sprout className="w-4 h-4" />
               </div>
-              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${filter === 'agriculture' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-full ${filter === 'agriculture' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
                 {categoryCounts.agriculture}
               </span>
             </div>
             <div>
-              <h3 className="font-black text-sm">Modern Agriculture</h3>
-              <p className={`text-[11px] ${filter === 'agriculture' ? 'text-slate-400' : 'text-slate-500'}`}>Smart farming tools & agricultural assets</p>
+              <h3 className="font-black text-xs sm:text-sm">Agriculture</h3>
+              <p className={`text-[10px] ${filter === 'agriculture' ? 'text-slate-400' : 'text-slate-500'}`}>Smart farming assets</p>
             </div>
           </div>
 
           {/* Digital Academy Card */}
           <div
             onClick={() => setFilter('academy')}
-            className={`p-5 rounded-3xl border transition-all cursor-pointer flex flex-col justify-between h-32 ${
+            className={`p-4 rounded-3xl border transition-all cursor-pointer flex flex-col justify-between h-32 ${
               filter === 'academy'
                 ? 'bg-slate-950 text-white border-slate-900 shadow-xl shadow-slate-900/10 ring-2 ring-slate-900'
                 : 'bg-white text-slate-900 border-slate-100 hover:border-slate-300'
             }`}
           >
             <div className="flex items-start justify-between">
-              <div className={`p-2.5 rounded-2xl ${filter === 'academy' ? 'bg-white/10 text-white' : 'bg-blue-50 text-blue-600'}`}>
-                <GraduationCap className="w-5 h-5" />
+              <div className={`p-2 rounded-2xl ${filter === 'academy' ? 'bg-white/10 text-white' : 'bg-blue-50 text-blue-600'}`}>
+                <GraduationCap className="w-4 h-4" />
               </div>
-              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${filter === 'academy' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-full ${filter === 'academy' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
                 {categoryCounts.academy}
               </span>
             </div>
             <div>
-              <h3 className="font-black text-sm">Digital Academy</h3>
-              <p className={`text-[11px] ${filter === 'academy' ? 'text-slate-400' : 'text-slate-500'}`}>Educational courses, masterclasses & guides</p>
+              <h3 className="font-black text-xs sm:text-sm">Academy</h3>
+              <p className={`text-[10px] ${filter === 'academy' ? 'text-slate-400' : 'text-slate-500'}`}>Courses &amp; masterclasses</p>
             </div>
           </div>
 
           {/* Software & Templates Card */}
           <div
             onClick={() => setFilter('software')}
-            className={`p-5 rounded-3xl border transition-all cursor-pointer flex flex-col justify-between h-32 ${
+            className={`p-4 rounded-3xl border transition-all cursor-pointer flex flex-col justify-between h-32 ${
               filter === 'software'
                 ? 'bg-slate-950 text-white border-slate-900 shadow-xl shadow-slate-900/10 ring-2 ring-slate-900'
                 : 'bg-white text-slate-900 border-slate-100 hover:border-slate-300'
             }`}
           >
             <div className="flex items-start justify-between">
-              <div className={`p-2.5 rounded-2xl ${filter === 'software' ? 'bg-white/10 text-white' : 'bg-amber-50 text-amber-600'}`}>
-                <Code2 className="w-5 h-5" />
+              <div className={`p-2 rounded-2xl ${filter === 'software' ? 'bg-white/10 text-white' : 'bg-amber-50 text-amber-600'}`}>
+                <Code2 className="w-4 h-4" />
               </div>
-              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full ${filter === 'software' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-full ${filter === 'software' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
                 {categoryCounts.software}
               </span>
             </div>
             <div>
-              <h3 className="font-black text-sm">Software</h3>
-              <p className={`text-[11px] ${filter === 'software' ? 'text-slate-400' : 'text-slate-500'}`}>Software tools, apps & digital templates</p>
+              <h3 className="font-black text-xs sm:text-sm">Software</h3>
+              <p className={`text-[10px] ${filter === 'software' ? 'text-slate-400' : 'text-slate-500'}`}>Apps &amp; templates</p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Embedded Mobile Airtime & Telebirr Station inside Digital Store */}
+      {(filter === 'all' || filter === 'airtime') && onSubmitTransaction && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-sky-600 text-white rounded-xl">
+                <Smartphone className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-black text-base text-slate-900 font-display flex items-center gap-2">
+                  <span>Kaardii Moobaayilaa &amp; Tajaajila Telebirr</span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-sky-100 text-sky-800 font-bold">
+                    INSTANT RECHARGE
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Buy Ethio Telecom and Safaricom mobile airtime cards directly via Telebirr or CBE Birr.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <MobileAirtimePurchase onSubmitTransaction={onSubmitTransaction} />
+        </div>
+      )}
 
       {/* Already Purchased / Reference Unlock Banner */}
       <div className="bg-sky-50/70 border border-sky-100 rounded-3xl p-6">

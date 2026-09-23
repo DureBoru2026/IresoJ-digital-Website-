@@ -1535,13 +1535,14 @@ const mobileTabs = [
           </div>
         );
 
-      // 3. ANNOUNCEMENTS VIEW
+      // 3. ANNOUNCEMENTS / DIGITAL STORE VIEW
       case 'digital-store':
         return (
           <DigitalStore 
             assets={assets}
             onDownload={handleDownloadAsset}
             onInitiatePurchase={handleInitiateAssetPurchase}
+            onSubmitTransaction={handleTransactionReferenceSubmit}
           />
         );
 

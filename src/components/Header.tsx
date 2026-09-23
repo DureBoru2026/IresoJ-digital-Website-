@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Menu, 
   X, 
@@ -25,7 +25,9 @@ import {
   User,
   UserPlus,
   Sparkles,
-  MessageSquare
+  MessageSquare,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ActiveTab, AuthState } from '../types';
@@ -47,6 +49,22 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
   const { t, lang, setLang } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [drawerSearch, setDrawerSearch] = useState('');
+  const [isOnline, setIsOnline] = useState<boolean>(() => 
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const navItems = [
     { id: 'home', label: t('home'), icon: Home },
@@ -70,8 +88,16 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
         <div id="top-nav-ticker" className="bg-slate-900 text-slate-300 border-b border-slate-800 py-1.5 px-4 text-[10px] sm:text-xs font-bold uppercase tracking-wider shadow-sm">
           <div className="max-w-7xl mx-auto flex items-center justify-center space-x-4 sm:space-x-8 min-w-max text-center overflow-x-auto scrollbar-hide">
             <button 
+              onClick={() => navigateTo('services')}
+              className="text-emerald-400 font-black hover:text-emerald-300 transition-all cursor-pointer flex items-center gap-1.5 bg-emerald-950/70 px-2.5 py-0.5 rounded-lg border border-emerald-500/40 shrink-0"
+            >
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>{t('services')}</span>
+            </button>
+            <span className="text-slate-700 font-black">/</span>
+            <button 
               onClick={() => navigateTo('community')}
-              className="flex items-center gap-1.5 text-white hover:text-amber-400 transition-colors cursor-pointer group"
+              className="flex items-center gap-1.5 text-white hover:text-amber-400 transition-colors cursor-pointer group shrink-0"
             >
               <Sparkles className="w-3 h-3 text-amber-400 group-hover:animate-spin" />
               {t('contentRewards')}
@@ -79,31 +105,23 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
             <span className="text-slate-700 font-black">/</span>
             <button 
               onClick={() => navigateTo('durepay')}
-              className="text-slate-300 hover:text-white transition-colors cursor-pointer"
+              className="text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0"
             >
               {t('instantPayouts')}
             </button>
             <span className="text-slate-700 font-black">/</span>
             <button 
               onClick={() => navigateTo('digital-store')}
-              className="text-white hover:text-amber-400 transition-colors cursor-pointer"
+              className="text-white hover:text-amber-400 transition-colors cursor-pointer shrink-0"
             >
               Book Sales
             </button>
             <span className="text-slate-700 font-black">/</span>
             <button 
               onClick={() => navigateTo('digital-store')}
-              className="text-slate-300 hover:text-white transition-colors cursor-pointer"
+              className="text-slate-300 hover:text-white transition-colors cursor-pointer shrink-0"
             >
               {t('digitalStore')}
-            </button>
-            <span className="text-slate-700 font-black">/</span>
-            <button 
-              onClick={() => navigateTo('services')}
-              className="text-emerald-400 font-black hover:text-emerald-300 transition-all cursor-pointer flex items-center gap-1"
-            >
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              {t('services')}
             </button>
           </div>
         </div>
@@ -115,23 +133,31 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
           {/* Logo Brand Section with IJ + Market Icon */}
           <div 
             id="brand-logo" 
-            className="flex items-center space-x-3 cursor-pointer group shrink-0"
+            className="flex items-center space-x-2.5 sm:space-x-3 cursor-pointer group shrink-0"
             onClick={() => navigateTo('home')}
           >
             {/* Logo IJ with Market Icon Badge */}
-            <div className="relative w-11 h-11 bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 rounded-2xl flex items-center justify-center text-slate-950 font-black shadow-md border-2 border-amber-300 group-hover:scale-105 transition-all duration-300 shrink-0">
-              <span className="font-mono text-lg font-black tracking-tighter">IJ</span>
+            <div className="relative w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 rounded-2xl flex items-center justify-center text-slate-950 font-black shadow-md border-2 border-amber-300 group-hover:scale-105 transition-all duration-300 shrink-0">
+              <span className="font-mono text-base sm:text-lg font-black tracking-tighter">IJ</span>
               <div className="absolute -bottom-1 -right-1 bg-slate-950 border border-amber-400 text-amber-400 p-0.5 rounded-md shadow-xs">
-                <ShoppingBag className="w-3 h-3 stroke-[2.5]" />
+                <ShoppingBag className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[2.5]" />
               </div>
             </div>
 
             <div>
-              <span className="font-display text-lg sm:text-xl font-black uppercase tracking-wider text-amber-500 dark:text-amber-400 flex items-center gap-1.5 transition-colors drop-shadow-xs">
-                IRESO-J DIGITAL-WEBSITE
-              </span>
-              <span className="block text-[9.5px] font-mono text-slate-600 dark:text-slate-300 uppercase tracking-widest font-black transition-colors">
-                Customer Services & IT Solution Center (CSC)
+              <div className="flex items-center gap-2">
+                <span className="font-display text-base sm:text-lg font-black uppercase tracking-wider text-amber-500 dark:text-amber-400 flex items-center gap-1.5 transition-colors drop-shadow-xs leading-none">
+                  IRESO-J DIGITAL
+                </span>
+                {!isOnline && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-600 dark:text-amber-300 text-[9px] font-black uppercase tracking-wider animate-pulse">
+                    <WifiOff className="w-2.5 h-2.5" />
+                    Offline
+                  </span>
+                )}
+              </div>
+              <span className="block text-[9px] sm:text-[9.5px] font-mono text-slate-600 dark:text-slate-300 uppercase tracking-widest font-black transition-colors mt-0.5">
+                CSC & IT SOLUTIONS
               </span>
             </div>
           </div>
@@ -163,9 +189,29 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
             })}
           </nav>
 
-          {/* User Auth Buttons, Theme Toggle & Language Bar */}
-          <div className="hidden md:flex items-center space-x-2.5 bg-stone-100 dark:bg-slate-800/90 border border-stone-200 dark:border-slate-700/80 rounded-2xl p-1.5 px-3 shadow-xs">
+          {/* User Auth Buttons, Theme Toggle, Network Indicator & Language Bar */}
+          <div className="hidden md:flex items-center space-x-2 bg-stone-100 dark:bg-slate-800/90 border border-stone-200 dark:border-slate-700/80 rounded-2xl p-1.5 px-3 shadow-xs">
             
+            {/* Connectivity / Offline Mode Indicator */}
+            {!isOnline ? (
+              <div 
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 text-[10px] font-black uppercase tracking-wider animate-pulse shadow-2xs cursor-help"
+                title="App is currently operating offline with cached local storage"
+              >
+                <WifiOff className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                <span className="font-mono">Offline (Cached)</span>
+              </div>
+            ) : (
+              <div 
+                className="hidden xl:flex items-center gap-1.5 px-2 py-1 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold"
+                title="Live Connection & Realtime Sync Active"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                <Wifi className="w-3 h-3 text-emerald-500 shrink-0" />
+                <span className="font-mono">Online</span>
+              </div>
+            )}
+
             {/* Global Theme Toggle Button */}
             {toggleTheme && (
               <button
@@ -299,8 +345,26 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
             )}
           </div>
 
-          {/* Mobile Menu Toggle, Language & Theme Buttons */}
-          <div className="md:hidden flex items-center gap-2">
+          {/* Mobile Menu Toggle, Connectivity, Language & Theme Buttons */}
+          <div className="md:hidden flex items-center gap-1.5 sm:gap-2">
+            {/* Mobile Offline Status Indicator */}
+            {!isOnline ? (
+              <div 
+                className="flex items-center gap-1 px-2 py-1 bg-amber-500/15 border border-amber-500/40 text-amber-700 dark:text-amber-300 rounded-xl text-[9px] font-black animate-pulse"
+                title="Working in offline mode (Cached)"
+              >
+                <WifiOff className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                <span className="font-mono">Cached</span>
+              </div>
+            ) : (
+              <div 
+                className="flex items-center p-1.5 text-emerald-600 dark:text-emerald-400"
+                title="Online Mode Active"
+              >
+                <Wifi className="w-3.5 h-3.5" />
+              </div>
+            )}
+
             {/* Quick Mobile Language Switcher */}
             <div className="flex items-center bg-stone-200 dark:bg-slate-800 rounded-xl p-0.5 border border-stone-300 dark:border-slate-700 text-[10px] font-black">
               <button
@@ -352,9 +416,22 @@ export default function Header({ activeTab, setActiveTab, authState, handleLogou
             {/* Drawer Top Header */}
             <div className="p-5 space-y-5">
               <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <span className="font-black text-sm uppercase tracking-widest text-slate-900 font-mono">
-                  MENU
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-sm uppercase tracking-widest text-slate-900 font-mono">
+                    MENU
+                  </span>
+                  {!isOnline ? (
+                    <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-black rounded-md flex items-center gap-1 animate-pulse">
+                      <WifiOff className="w-3 h-3 text-amber-600" />
+                      Offline (Cached)
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-black rounded-md flex items-center gap-1">
+                      <Wifi className="w-3 h-3 text-emerald-600" />
+                      Online
+                    </span>
+                  )}
+                </div>
                 <button 
                   onClick={() => setMobileMenuOpen(false)}
                   className="p-1.5 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
